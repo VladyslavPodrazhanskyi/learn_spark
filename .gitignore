@@ -127,3 +127,27 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+### IDE ###
+.vscode/
+.idea/
+
+# Cython debug symbols
+cython_debug/
+
+metastore_db
+derby.log

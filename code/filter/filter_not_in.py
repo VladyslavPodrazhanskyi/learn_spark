@@ -1,0 +1,37 @@
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType
+import pyspark.sql.functions as sf
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+arrayStructureData = [
+    (("James", "", "Smith"), ["Java", "Scala", "C++"], "OH", "M"),
+    (("Anna", "Rose", ""), ["Spark", "Java", "C++"], "NY", "F"),
+    (("Julia", "", "Williams"), ["CSharp", "VB"], "OH", "F"),
+    (("Maria", "Anne", "Jones"), ["CSharp", "VB"], "NY", "M"),
+    (("Jen", "Mary", "Brown"), ["CSharp", "VB"], "NY", "M"),
+    (("Mike", "Mary", "Williams"), ["Python", "VB"], "OH", "M")
+]
+
+arrayStructureSchema = StructType([
+    StructField('name', StructType([
+        StructField('firstname', StringType(), True),
+        StructField('middlename', StringType(), True),
+        StructField('lastname', StringType(), True)
+    ])),
+    StructField('languages', ArrayType(StringType()), True),
+    StructField('state', StringType(), True),
+    StructField('gender', StringType(), True)
+])
+
+df = spark.createDataFrame(data=arrayStructureData, schema=arrayStructureSchema)
+df.printSchema()
+df.show(truncate=False)
+
+df.filter(
+    ~sf.lower(sf.col('state')).isin(['oh', 'nt'])
+).show()
+
+#
+# df.filter(~df.state.isin(['OH', 'NT'])).show()
