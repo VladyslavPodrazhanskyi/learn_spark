@@ -1,4 +1,4 @@
-bInput = spark.read.format("parquet").load("/data/binary-classification")\
+bInput = spark.read.format("parquet").load("/source_data/binary-classification")\
   .selectExpr("features", "cast(label as double) as label")
 
 

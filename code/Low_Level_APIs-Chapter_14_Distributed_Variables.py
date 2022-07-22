@@ -29,7 +29,7 @@ words.map(lambda word: (word, suppBroadcast.value.get(word, 0)))\
 # COMMAND ----------
 
 flights = spark.read\
-  .parquet("/data/flight-data/parquet/2010-summary.parquet")
+  .parquet("/source_data/flight-source_data/parquet/2010-summary.parquet")
 
 
 # COMMAND ----------

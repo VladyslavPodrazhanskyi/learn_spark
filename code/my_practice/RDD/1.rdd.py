@@ -19,9 +19,9 @@ print(distData.reduce(lambda a, b: a + b))
 
 print(os.getcwd())
 
-lines = sc.textFile("data.txt")
+lines = sc.textFile("source_data.txt")
 print(type(lines))
-print(lines.collect())  # better use take(n) to sample data not to overload the driver
+print(lines.collect())  # better use take(n) to sample source_data not to overload the driver
 lineLengths = lines.map(lambda s: len(s))
 # lineLengths.persist()
 
@@ -37,7 +37,7 @@ def number_words(s):
     return len(words)
 
 
-num_words_rdd = sc.textFile("data.txt").map(number_words)
+num_words_rdd = sc.textFile("source_data.txt").map(number_words)
 totalNumWords = num_words_rdd.reduce(lambda a, b: a + b)
 print(totalNumWords)
 
@@ -53,7 +53,7 @@ In Python, these operations work on RDDs containing built-in Python tuples such 
 Simply create such tuples and then call your desired operation.
 '''
 
-lines = sc.textFile("data.txt")
+lines = sc.textFile("source_data.txt")
 pairs = lines.map(lambda s: (s, 1))
 counts = pairs.reduceByKey(lambda a, b: a + b)
 # sorted_counts = counts.sortByKey()

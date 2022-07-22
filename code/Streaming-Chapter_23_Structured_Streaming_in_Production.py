@@ -1,9 +1,9 @@
-static = spark.read.json("/data/activity-data")
+static = spark.read.json("/source_data/activity-source_data")
 streaming = spark\
   .readStream\
   .schema(static.schema)\
   .option("maxFilesPerTrigger", 10)\
-  .json("/data/activity-data")\
+  .json("/source_data/activity-source_data")\
   .groupBy("gt")\
   .count()
 query = streaming\

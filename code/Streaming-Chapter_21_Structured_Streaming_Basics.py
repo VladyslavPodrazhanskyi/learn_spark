@@ -1,11 +1,11 @@
-static = spark.read.json("/data/activity-data/")
+static = spark.read.json("/source_data/activity-source_data/")
 dataSchema = static.schema
 
 
 # COMMAND ----------
 
 streaming = spark.readStream.schema(dataSchema).option("maxFilesPerTrigger", 1)\
-  .json("/data/activity-data")
+  .json("/source_data/activity-source_data")
 
 
 # COMMAND ----------

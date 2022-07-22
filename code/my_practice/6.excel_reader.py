@@ -49,7 +49,7 @@ spark = SparkSession.builder \
 #     reader = reader.option("inferSchema", True)
 #
 #
-# df = reader.load(f'{ROOT}/data/test_excel_file.xlsx')
+# df = reader.load(f'{ROOT}/source_data/test_excel_file.xlsx')
 #
 # df.show(245, truncate=False)
 # df.printSchema()
@@ -93,7 +93,7 @@ print(excel_df.count())
 # df_without_schema = spark.read.format("com.crealytics.spark.excel") \
 #     .option("header", True) \
 #     .option("inferSchema", False) \
-#     .load(f'{ROOT}/data/test_excel_file.xlsx')
+#     .load(f'{ROOT}/source_data/test_excel_file.xlsx')
 #
 # df_without_schema.printSchema()
 # df_without_schema.show()
@@ -107,7 +107,7 @@ print(excel_df.count())
 # df_with_schema = spark.read.format("com.crealytics.spark.excel") \
 #     .option("header", True) \
 #     .schema(schema) \
-#     .load(f'{ROOT}/data/test_excel_file.xlsx')
+#     .load(f'{ROOT}/source_data/test_excel_file.xlsx')
 #
 # df_with_schema.printSchema()
 # df_with_schema.show()
@@ -116,7 +116,7 @@ print(excel_df.count())
 # .option('dataAddress', "'List_of_accounts_IS'!A1") \
 
 
-# .load(f'{ROOT}/data/GL_Accounts_of_Interest_20210928_142516.xlsx')
+# .load(f'{ROOT}/source_data/GL_Accounts_of_Interest_20210928_142516.xlsx')
 
 
 # .schema(schema) \

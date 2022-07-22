@@ -16,10 +16,8 @@ right_df = spark.createDataFrame([(1, 2, 3), (1, 2, 4), (1, 4, 6)], ("col1", "co
 joined_df = left_df.join(
     right_df,
     on='col3',
-
     how='left'
 ).drop(left_df.col1)
-
 
 
 joined_df.show()

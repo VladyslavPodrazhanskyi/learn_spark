@@ -1,5 +1,5 @@
 from sparkdl import readImages
-img_dir = '/data/deep-learning-images/'
+img_dir = '/source_data/deep-learning-images/'
 image_df = readImages(img_dir)
 
 

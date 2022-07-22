@@ -1,5 +1,5 @@
 """
-csv file - test data
+csv file - test source_data
 schema
 
 read csv with schema
@@ -86,7 +86,7 @@ spark.sql()
 # df_with_schema = spark.read.format("com.crealytics.spark.excel") \
 #     .option("header", True) \
 #     .schema(schema) \
-#     .load(f'{ROOT}/data/test_excel_file.xlsx')
+#     .load(f'{ROOT}/source_data/test_excel_file.xlsx')
 #
 # df_with_schema.printSchema()
 # df_with_schema.show()
@@ -95,7 +95,7 @@ spark.sql()
 # df_csv_without_schema = spark.format("com.crealytics.spark.excel") \
 #     .option("header", True) \
 #     .option("inferSchema", False) \
-#     .load(f'{ROOT}/data/test_excel_file.xlsx')
+#     .load(f'{ROOT}/source_data/test_excel_file.xlsx')
 
 
 def csv_extractor(sep, path):

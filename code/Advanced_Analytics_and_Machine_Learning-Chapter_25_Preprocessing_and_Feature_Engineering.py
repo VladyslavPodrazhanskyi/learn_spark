@@ -1,12 +1,12 @@
 sales = spark.read.format("csv")\
   .option("header", "true")\
   .option("inferSchema", "true")\
-  .load("/data/retail-data/by-day/*.csv")\
+  .load("/source_data/retail-source_data/by-day/*.csv")\
   .coalesce(5)\
   .where("Description IS NOT NULL")
-fakeIntDF = spark.read.parquet("/data/simple-ml-integers")
-simpleDF = spark.read.json("/data/simple-ml")
-scaleDF = spark.read.parquet("/data/simple-ml-scaling")
+fakeIntDF = spark.read.parquet("/source_data/simple-ml-integers")
+simpleDF = spark.read.json("/source_data/simple-ml")
+scaleDF = spark.read.parquet("/source_data/simple-ml-scaling")
 
 
 # COMMAND ----------
@@ -239,7 +239,7 @@ idf.fit(tf.transform(tfIdfIn)).transform(tf.transform(tfIdfIn)).show(10, False)
 # COMMAND ----------
 
 from pyspark.ml.feature import Word2Vec
-# Input data: Each row is a bag of words from a sentence or document.
+# Input source_data: Each row is a bag of words from a sentence or document.
 documentDF = spark.createDataFrame([
     ("Hi I heard about Spark".split(" "), ),
     ("I wish Java could use case classes".split(" "), ),

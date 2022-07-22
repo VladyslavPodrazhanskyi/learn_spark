@@ -1,4 +1,4 @@
-spark.read.json("/data/flight-data/json/2015-summary.json")\
+spark.read.json("/source_data/flight-source_data/json/2015-summary.json")\
   .createOrReplaceTempView("some_sql_view") # DF => SQL
 
 spark.sql("""

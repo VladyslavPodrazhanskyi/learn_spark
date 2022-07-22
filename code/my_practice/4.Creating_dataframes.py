@@ -7,8 +7,8 @@ spark = SparkSession.builder.master("local[*]").getOrCreate()
 
 # Create dataframes
 
-# 1. from raw data sources - files  ( spark.read)
-df = spark.read.format("json").load("data/flight-data/json/2015-summary.json")
+# 1. from raw source_data sources - files  ( spark.read)
+df = spark.read.format("json").load("source_data/flight-source_data/json/2015-summary.json")
 
 # temporary view for query with SQL
 # temporary view for query with SQL

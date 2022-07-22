@@ -133,7 +133,7 @@ words.coalesce(1).getNumPartitions() # 1
 # COMMAND ----------
 
 df = spark.read.option("header", "true").option("inferSchema", "true")\
-  .csv("/data/retail-data/all/")
+  .csv("/source_data/retail-source_data/all/")
 rdd = df.coalesce(10).rdd
 
 

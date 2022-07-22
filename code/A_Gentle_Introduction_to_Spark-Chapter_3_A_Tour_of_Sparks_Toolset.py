@@ -1,7 +1,7 @@
 # staticDataFrame = spark.read.format("csv")\
 #   .option("header", "true")\
 #   .option("inferSchema", "true")\
-#   .load("/data/retail-data/by-day/*.csv")
+#   .load("/source_data/retail-source_data/by-day/*.csv")
 #
 # staticDataFrame.createOrReplaceTempView("retail_data")
 # staticSchema = staticDataFrame.schema
@@ -29,7 +29,7 @@
 #     .option("maxFilesPerTrigger", 1)\
 #     .format("csv")\
 #     .option("header", "true")\
-#     .load("/data/retail-data/by-day/*.csv")
+#     .load("/source_data/retail-source_data/by-day/*.csv")
 #
 #
 # # COMMAND ----------

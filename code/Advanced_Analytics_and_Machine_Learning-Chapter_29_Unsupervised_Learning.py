@@ -6,7 +6,7 @@ va = VectorAssembler()\
 sales = va.transform(spark.read.format("csv")
   .option("header", "true")
   .option("inferSchema", "true")
-  .load("/data/retail-data/by-day/*.csv")
+  .load("/source_data/retail-source_data/by-day/*.csv")
   .limit(50)
   .coalesce(1)
   .where("Description IS NOT NULL"))

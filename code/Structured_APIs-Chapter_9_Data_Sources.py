@@ -2,7 +2,7 @@ csvFile = spark.read.format("csv")\
   .option("header", "true")\
   .option("mode", "FAILFAST")\
   .option("inferSchema", "true")\
-  .load("/data/flight-data/csv/2010-summary.csv")
+  .load("/source_data/flight-source_data/csv/2010-summary.csv")
 
 
 # COMMAND ----------
@@ -15,7 +15,7 @@ csvFile.write.format("csv").mode("overwrite").option("sep", "\t")\
 
 spark.read.format("json").option("mode", "FAILFAST")\
   .option("inferSchema", "true")\
-  .load("/data/flight-data/json/2010-summary.json").show(5)
+  .load("/source_data/flight-source_data/json/2010-summary.json").show(5)
 
 
 # COMMAND ----------
@@ -26,7 +26,7 @@ csvFile.write.format("json").mode("overwrite").save("/tmp/my-json-file.json")
 # COMMAND ----------
 
 spark.read.format("parquet")\
-  .load("/data/flight-data/parquet/2010-summary.parquet").show(5)
+  .load("/source_data/flight-source_data/parquet/2010-summary.parquet").show(5)
 
 
 # COMMAND ----------
@@ -37,7 +37,7 @@ csvFile.write.format("parquet").mode("overwrite")\
 
 # COMMAND ----------
 
-spark.read.format("orc").load("/data/flight-data/orc/2010-summary.orc").show(5)
+spark.read.format("orc").load("/source_data/flight-source_data/orc/2010-summary.orc").show(5)
 
 
 # COMMAND ----------
@@ -48,7 +48,7 @@ csvFile.write.format("orc").mode("overwrite").save("/tmp/my-json-file.orc")
 # COMMAND ----------
 
 driver = "org.sqlite.JDBC"
-path = "/data/flight-data/jdbc/my-sqlite.db"
+path = "/source_data/flight-source_data/jdbc/my-sqlite.db"
 url = "jdbc:sqlite:" + path
 tablename = "flight_info"
 

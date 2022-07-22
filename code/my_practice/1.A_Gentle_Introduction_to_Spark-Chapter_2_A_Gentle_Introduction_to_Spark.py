@@ -17,7 +17,7 @@ flightData2015 = spark \
     .option("inferSchema", "true") \
     .option("header", "true") \
     .csv(
-    "/home/vladyslav_podrazhanskyi/projects/python/Spark-The-Definitive-Guide/data/flight-data/csv/2015-summary.csv")
+    "/home/vladyslav_podrazhanskyi/projects/python/Spark-The-Definitive-Guide/source_data/flight-source_data/csv/2015-summary.csv")
 
 """
 >>> flightData2015.take(3)

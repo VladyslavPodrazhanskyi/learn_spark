@@ -1,9 +1,9 @@
-# df = spark.read.format("json").load("/data/flight-data/json/2015-summary.json")
+# df = spark.read.format("json").load("/source_data/flight-source_data/json/2015-summary.json")
 #
 #
 # # COMMAND ----------
 #
-# spark.read.format("json").load("/data/flight-data/json/2015-summary.json").schema
+# spark.read.format("json").load("/source_data/flight-source_data/json/2015-summary.json").schema
 #
 #
 # # COMMAND ----------
@@ -16,7 +16,7 @@
 #   StructField("count", LongType(), False, metadata={"hello":"world"})
 # ])
 # df = spark.read.format("json").schema(myManualSchema)\
-#   .load("/data/flight-data/json/2015-summary.json")
+#   .load("/source_data/flight-source_data/json/2015-summary.json")
 #
 #
 # # COMMAND ----------
@@ -46,7 +46,7 @@
 #
 # # COMMAND ----------
 #
-# df = spark.read.format("json").load("/data/flight-data/json/2015-summary.json")
+# df = spark.read.format("json").load("/source_data/flight-source_data/json/2015-summary.json")
 # df.createOrReplaceTempView("dfTable")
 #
 #
@@ -221,7 +221,7 @@
 #
 # # COMMAND ----------
 #
-# spark.read.format("json").load("/data/flight-data/json/*-summary.json")\
+# spark.read.format("json").load("/source_data/flight-source_data/json/*-summary.json")\
 #   .sortWithinPartitions("count")
 #
 #

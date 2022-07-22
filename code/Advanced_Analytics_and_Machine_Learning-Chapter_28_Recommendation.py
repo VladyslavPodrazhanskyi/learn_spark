@@ -1,6 +1,6 @@
 from pyspark.ml.recommendation import ALS
 from pyspark.sql import Row
-ratings = spark.read.text("/data/sample_movielens_ratings.txt")\
+ratings = spark.read.text("/source_data/sample_movielens_ratings.txt")\
   .rdd.toDF()\
   .selectExpr("split(value , '::') as col")\
   .selectExpr(

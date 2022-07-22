@@ -1,4 +1,4 @@
-df = spark.read.load("/data/regression")
+df = spark.read.load("/source_data/regression")
 
 
 # COMMAND ----------

@@ -3,18 +3,18 @@ import pyspark.sql.functions as F
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
-df = spark.read.format("json").load("data/flight-data/json/2015-summary.json")
+df = spark.read.format("json").load("source_data/flight-source_data/json/2015-summary.json")
 
 # Schemas
-# A schema defines the column names and types of a DataFrame. We can either let a data source
+# A schema defines the column names and types of a DataFrame. We can either let a source_data source
 # define the schema (called schema-on-read) or we can define it explicitly ourselves.
-# Deciding whether you need to define a schema prior to reading in your data depends on your use case.
+# Deciding whether you need to define a schema prior to reading in your source_data depends on your use case.
 # For ad hoc analysis, schema-on-read usually works just fine (although at times it can be a bit slow with
 # plain-text file formats like CSV or JSON). However, this can also lead to precision issues like a long
 # type incorrectly set as an integer when reading in a file. When using Spark for production Extract,
 # Transform, and Load (ETL), it is often a good idea to define your schemas manually, especially when
-# working with untyped data sources like CSV and JSON because schema inference can vary depending
-# on the type of data that you read in.
+# working with untyped source_data sources like CSV and JSON because schema inference can vary depending
+# on the type of source_data that you read in.
 
 print(df.schema)
 # Schema - StructType, made of fields
@@ -38,9 +38,9 @@ myManualSchema = StructType([
 ])
 
 # df = spark.read.format("json").schema(myManualSchema)\
-#   .load("/data/flight-data/json/2015-summary.json")
+#   .load("/source_data/flight-source_data/json/2015-summary.json")
 
-df2 = spark.read.format("json").schema(myManualSchema).load("data/flight-data/json/2015-summary.json")
+df2 = spark.read.format("json").schema(myManualSchema).load("source_data/flight-source_data/json/2015-summary.json")
 print("df2")
 print(df2.columns)
 # ['DEST_COUNTRY_NAME', 'ORIGIN_COUNTRY_NAME', 'number']

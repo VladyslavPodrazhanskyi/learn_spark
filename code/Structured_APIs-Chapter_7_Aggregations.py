@@ -1,7 +1,7 @@
 df = spark.read.format("csv")\
   .option("header", "true")\
   .option("inferSchema", "true")\
-  .load("/data/retail-data/all/*.csv")\
+  .load("/source_data/retail-source_data/all/*.csv")\
   .coalesce(5)
 df.cache()
 df.createOrReplaceTempView("dfTable")

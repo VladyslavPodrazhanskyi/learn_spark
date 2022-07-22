@@ -1,7 +1,7 @@
 bikeStations = spark.read.option("header","true")\
-  .csv("/data/bike-data/201508_station_data.csv")
+  .csv("/source_data/bike-source_data/201508_station_data.csv")
 tripData = spark.read.option("header","true")\
-  .csv("/data/bike-data/201508_trip_data.csv")
+  .csv("/source_data/bike-source_data/201508_trip_data.csv")
 
 
 # COMMAND ----------
