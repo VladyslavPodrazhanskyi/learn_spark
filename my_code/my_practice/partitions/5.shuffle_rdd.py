@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 import pyspark.sql.types as st
 
-from code import ROOT
+from my_code import ROOT
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 

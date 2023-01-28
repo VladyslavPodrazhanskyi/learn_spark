@@ -10,13 +10,27 @@ spark = (
 )
 
 
-left_df = spark.createDataFrame([(1, 2, 3), (1, 2, 4), (1, 4, 6)], ("col1", "col2", "col3"))
-right_df = spark.createDataFrame([(1, 2, 3), (1, 2, 4), (1, 4, 6)], ("col1", "col2", "col3"))
+left_df = spark.createDataFrame(
+    [
+        (1, 2, 'AD12'),
+        (1, 2, ''),
+        (1, 4, 'BP3')
+    ],
+    ("col1", "col2", "col3")
+)
+right_df = spark.createDataFrame(
+    [
+        (1, 2, 'AD12'),
+        (1, 2, ''),
+        (1, 4, 'skf')
+    ],
+    ("col1", "col2", "col3")
+)
 
 joined_df = left_df.join(
     right_df,
     on='col3',
-    how='left'
+    how='inner'
 ).drop(left_df.col1)
 
 
