@@ -1,63 +1,59 @@
+"""
+    mapPartitions
+
+    It is similar to map() operation where the output of mapPartitions() returns the same number of rows as in input RDD.
+    It is used to improve the performance of the map() when there is a need to do heavy initializations like Database connection.
+    mapPartitions() applies a heavy initialization to each partition of RDD instead of each element of RDD.
+    It is a Narrow transformation operation
+    PySpark DataFrame doesn’t have this operation hence you need to convert DataFrame to RDD to use mapPartitions()
+
+"""
+
 import os
 from pyspark import SparkContext, SparkConf
 from my_code import ROOT
 
+from pyspark.sql import SparkSess
+
 from pyspark.sql import SparkSession
-
-spark = SparkSession.builder.appName('rdd').getOrCreate()
-sc = spark.sparkContext
-
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
 data = [
-    "Project",
-    "Gutenberg’s",
-    "Alice’s",
-    "Adventures",
-    "in",
-    "Wonderland",
-    "Project",
-    "Gutenberg’s",
-    "Adventures",
-    "in",
-    "Wonderland",
-    "Project",
-    "Gutenberg’s"
+    ('James', 'Smith', 'M', 3000),
+    ('Anna', 'Rose', 'F', 4100),
+    ('Robert', 'Williams', 'M', 6200),
 ]
 
-rdd = sc.parallelize(data)
-
-rdd2 = rdd.map(lambda x: (x, 1))
-
-for el in rdd2.collect():
-    print(el)
-
-
-data = [
-    ('James', 'Smith', 'M', 30),
-    ('Anna', 'Rose', 'F', 41),
-    ('Robert', 'Williams', 'M', 62),
-]
-
-columns_schema = ["firstname", "lastname", "gender", "salary"]
-
-df = spark.createDataFrame(data=data, schema=columns_schema)
+columns = ["firstname", "lastname", "gender", "salary"]
+df = spark.createDataFrame(data=data, schema=columns)
 df.show()
 
-# map_rdd = df.rdd.map(lambda x: (x[0] + ', ' + x[1], x[2], x[3]))
 
-# ref_name_rdd = df.rdd.map(lambda x: (x['firstname'] + ', ' + x['lastname'], x['gender'].lower(), x['salary']))
+# gen with yield
+def reformat_gen(partition_data):
+    for row in partition_data:
+        print(type(row))
+        firstname = row.firstname
+        lastname = row.lastname
+        name = firstname + ', ' + lastname
+        gender = row.gender.lower()
+        salary = row.salary
+        yield name, gender, salary
 
 
-def func(row):
-    firstname = row.firstname
-    lastname = row.lastname
-    name = firstname + ', ' + lastname
-    gender = row.gender.lower()
-    salary = row.salary
-    return name, gender, salary
+# # gen with iter without yield
+# def reformat_gen2(partition_data):
+#     updated_data = []
+#     for row in partition_data:
+#         firstname = row.firstname
+#         lastname = row.lastname
+#         name = firstname + ', ' + lastname
+#         gender = row.gender.lower()
+#         salary = row.salary
+#         updated_data.append((name, gender, salary))
+#     return iter(updated_data)
 
 
-func_rdd = df.rdd.map(lambda row: func(row))
+map_part_rdd = df.rdd.mapPartitions(reformat_gen)
+df2 = map_part_rdd.toDF(['name', 'gender', 'salary'])
 
-map_df = func_rdd.toDF(['name', "gender", "salary"])
-
-map_df.show()
+df2.show()

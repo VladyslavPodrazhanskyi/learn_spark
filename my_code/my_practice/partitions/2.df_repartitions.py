@@ -22,7 +22,7 @@ from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 import pyspark.sql.types as st
 
-from code import ROOT
+from my_code import ROOT
 
 spark = (
     SparkSession
@@ -34,16 +34,16 @@ spark = (
 spark.conf.set('spark.sql.shuffle.partitions', '50')  # default is 200
 
 df = spark.range(0, 20)
-print(df.rdd.getNumPartitions())
+print(df.rdd.getNumPartitions())   # 5
 
 df.write.mode("overwrite").csv(f"{ROOT}/result_data/tmp/df_range")
 
 df_repart_ten = df.repartition(10)
-print(df_repart_ten.rdd.getNumPartitions())
+print(df_repart_ten.rdd.getNumPartitions())   # 10
 df_repart_ten.write.mode("overwrite").csv(f"{ROOT}/result_data/tmp/df_repartition_ten")
 
 df_repart_three = df.repartition(3)
-print(df_repart_three.rdd.getNumPartitions())
+print(df_repart_three.rdd.getNumPartitions())   # 3
 df_repart_three.write.mode("overwrite").csv(f"{ROOT}/result_data/tmp/df_repartition_three")
 
 df_coales_ten = df.coalesce(10)  # NumPartitions can't be increased
@@ -51,11 +51,11 @@ print(df_coales_ten.rdd.getNumPartitions())  # 5
 df_coales_ten.write.mode("overwrite").csv(f"{ROOT}/result_data/tmp/df_coales_ten")
 
 df_coales_three = df.coalesce(3)
-print(df_coales_three.rdd.getNumPartitions())
+print(df_coales_three.rdd.getNumPartitions())  # 3
 df_coales_three.write.mode("overwrite").csv(f"{ROOT}/result_data/tmp/df_coales_three")
 
 df.show()
 
 df_group = df.groupBy('id').count()
-print(df_group.rdd.getNumPartitions())
+print(df_group.rdd.getNumPartitions())  # 5
 

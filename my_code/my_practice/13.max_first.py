@@ -30,5 +30,6 @@ df.show()
 max_col1 = df.select('col1').orderBy(sf.col('col1').desc()).first()
 max_col1_alt = df.select(sf.max(sf.col('col1'))).alias('max_col').collect()[0][0]
 
-
+print(df.collect()[0].col3 == df.collect()[0][2])   # df.collect()[0][2]
+print(df.collect()[0][1])
 print(max_col1_alt)

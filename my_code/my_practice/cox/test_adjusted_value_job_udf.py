@@ -43,32 +43,73 @@ def get_secret(secret_name):
         return decoded_binary_secret
 
 
-def __validate_parse_book_response(response: requests.Response):
-    adjusted_value = None
+@F.udf(returnType=DoubleType())
+def retrieveAdjustedValueUDF(
+    vin_num,
+    trim_api,
+    book_key,
+    mileage,
+    sbmt_date
+):
 
-    if response.status_code != 200 or response.json() == 0:
-        return adjusted_value
+    if not mileage or not sbmt_date:
+        return None
 
-    for book in response.json()['Books'][0]['BookValues']:
-        if book.get('Name') == 'Retail':
-            adjusted_value = book.get("AdjustedValue")
+    if not book_key:
+        book_key = _retrieve_book_key(vin_num, trim_api)
+    adjusted_value = _retrieve_adjusted_value(
+        vin_num,
+        book_key,
+        mileage,
+        sbmt_date
+    )
+    return None if adjusted_value is None else adjusted_value
 
-    return adjusted_value
+
+def _retrieve_book_key(vin_num, trim_api):
+    time.sleep(0.005 * 5)
+    vehicle_book_url = f"{BASE_URL}/chromeusa/vin"
+    authorization_header = {'x-api-key': secret_dtv_key}
+    retrieve_book_mapping = True
+
+    vehicle_book_resp = requests.get(
+        url=vehicle_book_url,
+        params={
+            'vin': vin_num,
+            'trimHint': trim_api,
+            'retrieveBookMapping': retrieve_book_mapping
+        },
+        headers=authorization_header
+    )
+
+    vehicle_book_key = None
+
+    if vehicle_book_resp.status_code != 200 or vehicle_book_resp.json() == 0:  # or is none ???
+        book_key = vehicle_book_key
+
+    else:
+        vehicle_book_resp_json = vehicle_book_resp.json()
+
+        for book_mapping in vehicle_book_resp_json['Books'][0]['BookMappings']:
+            if book_mapping.get('Name') == 'KelleyBlueBook':
+                vehicle_book_key = book_mapping.get('VehicleBookKey')
+
+        book_key = vehicle_book_key
+    return book_key
 
 
-def _retrieve_adjusted_value(row):
-    time.sleep(0.005 * 3)  # limit number of calls per second
-
-    vin_num = row.get('VIN_NUM')
-    book_key = row.get("BOOK_KEY")
-    mileage = row.get('MILEAGE')
-    sbmt_date = row.get('SBMT_date')
-
+def _retrieve_adjusted_value(
+    vin_num,
+    book_key,
+    mileage,
+    sbmt_date
+):
+    time.sleep(0.005 * 5)
     authorization_header = {'x-api-key': secret_dtv_key}
 
     adjusted_value = None
 
-    if book_key is not None:
+    if book_key:
         value_vehicle_url = f"{BASE_URL}/kbb/valuevehicle"
         value_vehicle_response = requests.get(
             url=value_vehicle_url,
@@ -100,26 +141,35 @@ def _retrieve_adjusted_value(row):
         )
         adjusted_value = __validate_parse_book_response(value_vehicle_response)
 
-    if adjusted_value is None:
-        row["ADJUSTED_VALUE"] = None
-        return row
+    return adjusted_value
 
-    row['ADJUSTED_VALUE'] = adjusted_value
-    return row
+
+def __validate_parse_book_response(response: requests.Response):
+
+    adjusted_value = None
+
+    if response.status_code != 200 or response.json() == 0:
+        return adjusted_value
+
+    for book in response.json()['Books'][0]['BookValues']:
+        if book.get('Name') == 'Retail':
+            adjusted_value = book.get("AdjustedValue")
+
+    return adjusted_value
 
 
 # storing the final data in S3
 def write_result(result_df, path):
     print("start writing function")
 
-    # result_df = result_df.repartition(1)
+    result_df = result_df.coalesce(1)
 
     (
         result_df
-            .write
-            .partitionBy("year", "month", "day")
-            .mode('overwrite')
-            .parquet(path)
+        .write
+        .partitionBy("year", "month", "day")
+        .mode('overwrite')
+        .parquet(path)
     )
 
     print("finish writing")
@@ -154,10 +204,9 @@ if __name__ == '__main__':
         [
             'JOB_NAME',
             'AWS_REGION',
-            'ProcessedBucketName',  # dri-fnibot-us-east-1-366490053584
-            'BookKeysFolder',  # dealertrack/fni/ltv_history/book_keys
-            'SourceFolder',
-            # dealertrack/fni/ltv_history/source_folder - copy file here from dealertrack/fni/output/fni_rate_estimation/total/
+            'ProcessedBucketName',   # dri-fnibot-us-east-1-366490053584
+            'BookKeysFolder',        # dealertrack/fni/ltv_history/book_keys
+            'SourceFolder',          # dealertrack/fni/ltv_history/source_folder - copy file here from dealertrack/fni/output/fni_rate_estimation/total/
             'AdjustedValuesFolder',  # dealertrack/fni/ltv_history/adjusted_value_folder
             'DTVApiSecretName'
         ]
@@ -166,9 +215,9 @@ if __name__ == '__main__':
     # Build spark session
     spark = (
         SparkSession
-            .builder
-            .appName("fni-data-pipeline")
-            .getOrCreate()
+        .builder
+        .appName("fni-data-pipeline")
+        .getOrCreate()
     )
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
@@ -203,15 +252,13 @@ if __name__ == '__main__':
 
     print('start reading source files')
 
-    source_df = spark.read.parquet(f"s3://{processed_bucket}/{source_folder}/")
+    source_df = spark.read.parquet(f"s3://{processed_bucket}/{source_folder}/").cache()
 
     book_keys_df = spark.read.parquet(f"s3://{processed_bucket}/{book_keys_folder}/")
 
     print('finished reading source files')
 
     if source_df and not source_df.rdd.isEmpty():
-
-        # .withColumnRenamed("LOAN_TO_VAL_RT", "dt_ltv")  # loantovalueratio to dt_ltv
 
         vin_df = source_df.withColumn(
             "SBMT_date", F.to_date("SBMT_TS")
@@ -237,45 +284,43 @@ if __name__ == '__main__':
             how='left'
         )
 
-        print('before coalesce', vin_with_book_keys_df.rdd.getNumPartitions())
-
-        vin_with_book_keys_df = vin_with_book_keys_df.coalesce(1).cache()
-
-        print('after coalesce', vin_with_book_keys_df.rdd.getNumPartitions())
+        print('before mapping', vin_with_book_keys_df.rdd.getNumPartitions())
 
         print('start mapping...')
 
-        adjusted_value_df = Map.apply(
-            frame=DynamicFrame.fromDF(vin_with_book_keys_df, glueContext, 'adjusted_value_df'),
-            f=lambda x: x
-        ).toDF().cache()
+        adjusted_value_df = vin_with_book_keys_df.withColumn(
+            "ADJUSTED_VALUE",
+            retrieveAdjustedValueUDF(
+                F.col('VIN_NUM'),
+                F.col('TRIM_API'),
+                F.col('BOOK_KEY'),
+                F.col('MILEAGE'),
+                F.col('SBMT_date')
+            )
+        ).cache()
+
+        print("count_adjusted_value", adjusted_value_df.count())
+        adjusted_value_df.printSchema()
 
         # adjusted_value_df = adjusted_value_df.resolveChoice(specs=[('ADJUSTED_VALUE', 'cast:double')]).toDF()
 
         print('finish mapping...')
 
-        # print("after_mapping", adjusted_value_df.rdd.getNumPartitions())
+        print("after_mapping", adjusted_value_df.rdd.getNumPartitions())
 
         adjusted_value_df = (
             adjusted_value_df
-                .withColumn("year", F.year(F.col("SBMT_date")))
-                .withColumn("month", F.month(F.col("SBMT_date")))
-                .withColumn("day", F.dayofmonth(F.col("SBMT_date")))
-        )
-
-        # adjusted_value_df = (
-        #     adjusted_value_df
-        #     .select(
-        #         "VIN_NUM",
-        #         "TRIM_API",
-        #         "MILEAGE",
-        #         "SBMT_date",
-        #         "ADJUSTED_VALUE"
-        #     ).filter(F.col("ADJUSTED_VALUE").isNotNull())
-        #     .withColumn("year", F.year(F.col("SBMT_date")))
-        #     .withColumn("month", F.month(F.col("SBMT_date")))
-        #     .withColumn("day", F.dayofmonth(F.col("SBMT_date")))
-        # ).cache()
+            .select(
+                "VIN_NUM",
+                "TRIM_API",
+                "MILEAGE",
+                "SBMT_date",
+                "ADJUSTED_VALUE"
+            ).filter(F.col("ADJUSTED_VALUE").isNotNull())
+            .withColumn("year", F.year(F.col("SBMT_date")))
+            .withColumn("month", F.month(F.col("SBMT_date")))
+            .withColumn("day", F.dayofmonth(F.col("SBMT_date")))
+        ).cache()
 
         # print("conf set")
 
@@ -302,7 +347,7 @@ if __name__ == '__main__':
         # print("repart_ym_df partition num", repart_ym_df.rdd.getNumPartitions())
 
         # write_result(adjusted_value_df, f"s3://{processed_bucket}/{adjusted_value_folder}")
-        write_result(adjusted_value_df, f"s3://{processed_bucket}/awsdri/pv_tests/empty_lambda_mapping")
+        write_result(adjusted_value_df, f"s3://{processed_bucket}/awsdri/pv_tests/adjusted_value_udf")
 
     else:
         LOG.warn(f"{job_name}: {WARN_MESSAGE_PREFIX} No historic data were found.")

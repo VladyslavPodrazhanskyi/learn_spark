@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame
 import pyspark.sql.types as st
 import pyspark.sql.functions as sf
-from code import ROOT
+from my_code import ROOT
 
 # http://192.168.100.3:4040/
 
@@ -31,6 +31,10 @@ results = (
 )
 #
 #
+results.cache()
+
 results.explain(mode='extended')
-#
-# results.rdd.getNumPartitions()
+results.rdd.getNumPartitions()
+print(results.collect())  # list of rows
+
+

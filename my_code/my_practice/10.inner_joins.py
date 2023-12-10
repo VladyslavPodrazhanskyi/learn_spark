@@ -9,27 +9,36 @@ spark = (
     .getOrCreate()
 )
 
+schema = st.StructType([
+    st.StructField('col1', st.IntegerType(), True),
+    st.StructField('col2', st.DoubleType(), True),
+    st.StructField('col3', st.StringType(), True),
+])
+
+
+
 
 left_df = spark.createDataFrame(
     [
-        (1, 2, 'AD12'),
-        (1, 2, ''),
-        (1, 4, 'BP3')
+        (1, 2.0, 'AD12'),
+        (1, 2.28449, ''),
+        (1, 4.000000000001, 'BP3')
     ],
-    ("col1", "col2", "col3")
+    schema
 )
 right_df = spark.createDataFrame(
     [
-        (1, 2, 'AD12'),
-        (1, 2, ''),
-        (1, 4, 'skf')
+        (1, 2.0, 'AD12'),
+        (1, 2.28449, ''),
+        (1, 4.000000000001, 'skf')
     ],
-    ("col1", "col2", "col3")
+    schema
+    # ("col1", "col2", "col3")
 )
 
 joined_df = left_df.join(
     right_df,
-    on='col3',
+    on='col2',
     how='inner'
 ).drop(left_df.col1)
 

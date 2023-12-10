@@ -1,59 +1,87 @@
-"""
-    mapPartitions
-
-    It is similar to map() operation where the output of mapPartitions() returns the same number of rows as in input RDD.
-    It is used to improve the performance of the map() when there is a need to do heavy initializations like Database connection.
-    mapPartitions() applies a heavy initialization to each partition of RDD instead of each element of RDD.
-    It is a Narrow transformation operation
-    PySpark DataFrame doesn’t have this operation hence you need to convert DataFrame to RDD to use mapPartitions()
-
-"""
-
 import os
 from pyspark import SparkContext, SparkConf
 from my_code import ROOT
+from datetime import date, datetime
+from pyspark.sql import SparkSession, functions as sf
 
-from pyspark.sql import SparkSess
-
-from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+
 data = [
-    ('James', 'Smith', 'M', 3000),
-    ('Anna', 'Rose', 'F', 4100),
-    ('Robert', 'Williams', 'M', 6200),
+    ('James', 'Smith', 'M', 3000, datetime(2022, 11, 29, 11, 17, 28)),
+    ('Anna', 'Rose', 'F', 4100, datetime(2022, 11, 29, 11, 17, 28)),
+    ('Robert', 'Williams', 'M', 1999, None),
 ]
 
-columns = ["firstname", "lastname", "gender", "salary"]
+columns = ["firstname", "lastname", "gender", "salary", 'date']
 df = spark.createDataFrame(data=data, schema=columns)
-df.show()
 
+df.show()
+#
+schema = df.schema
+df.printSchema()
+print(df.count())
 
 # gen with yield
 def reformat_gen(partition_data):
     for row in partition_data:
-        print(type(row))
-        firstname = row.firstname
-        lastname = row.lastname
-        name = firstname + ', ' + lastname
-        gender = row.gender.lower()
-        salary = row.salary
-        yield name, gender, salary
+        row_dict = row.asDict()
+        print(row_dict)
+        # firstname = row.firstname
+        # lastname = row.lastname
+        # name = firstname + ', ' + lastname
+        # gender = row.gender.lower()
+        # salary = row.salary
+        yield row_dict
 
-
-# # gen with iter without yield
-# def reformat_gen2(partition_data):
-#     updated_data = []
-#     for row in partition_data:
-#         firstname = row.firstname
-#         lastname = row.lastname
-#         name = firstname + ', ' + lastname
-#         gender = row.gender.lower()
-#         salary = row.salary
-#         updated_data.append((name, gender, salary))
-#     return iter(updated_data)
-
-
+# #
+# # # # gen with iter without yield
+# # # def reformat_gen2(partition_data):
+# # #     updated_data = []
+# # #     for row in partition_data:
+# # #         firstname = row.firstname
+# # #         lastname = row.lastname
+# # #         name = firstname + ', ' + lastname
+# # #         gender = row.gender.lower()
+# # #         salary = row.salary
+# # #         updated_data.append((name, gender, salary))
+# # #     return iter(updated_data)
+# #
+# #
+#
 map_part_rdd = df.rdd.mapPartitions(reformat_gen)
-df2 = map_part_rdd.toDF(['name', 'gender', 'salary'])
+df2 = spark.createDataFrame(map_part_rdd, schema)
 
-df2.show()
+df2.show(truncate=False)
+#
+df_par = (
+    spark
+    .read
+    .parquet(f"{ROOT}/my_code/my_practice/RDD/parq_files/")
+)
+
+df_par.show()
+print(df_par.count())
+
+
+ts_schema = df_par.schema
+
+
+def ts_gen(partition_data):
+    for row in partition_data:
+        row_dict = row.asDict()
+        # print(row_dict)
+        # firstname = row.firstname
+        # lastname = row.lastname
+        # name = firstname + ', ' + lastname
+        # gender = row.gender.lower()
+        # salary = row.salary
+        yield row_dict
+
+
+ts_part_rdd = df_par.rdd.mapPartitions(ts_gen)
+ts_df2 = spark.createDataFrame(ts_part_rdd, ts_schema)
+
+ts_df2.show()
+print(ts_df2.count())
+

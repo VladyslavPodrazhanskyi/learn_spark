@@ -1,6 +1,7 @@
 import sys
 import time
 import requests
+from random import choice
 
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
@@ -62,7 +63,10 @@ args = getResolvedOptions(
 
 BASE_URL = "https://api.coxautoguidebooks.com"
 
-# secret_dtv_key = get_secret(args["DTVApiSecretName"])["api_key"]
+secret_dtv_key = get_secret(args["DTVApiSecretName"])["api_key"]
+
+book_keys = ['book_key_1', 'book_key_2', 'book_key_3', None]
+adj_values = [10000.0, 20000.0, None]
 
 
 data_science_bucket_name = args['DataScienceBucketName']
@@ -186,8 +190,8 @@ def standardize_ltv(
     # rename old ltv and prepare df for enrichment
     prepared_df = (
         main_df
-            .withColumnRenamed("LOAN_TO_VAL_RT", "dt_ltv")
-            .withColumn("sbmt_date", F.to_date("sbmt_ts"))
+        .withColumnRenamed("LOAN_TO_VAL_RT", "dt_ltv")
+        .withColumn("sbmt_date", F.to_date("sbmt_ts"))
     ).cache()
 
     print("prepared_df")
@@ -206,7 +210,6 @@ def standardize_ltv(
 
     print("hist_enriched_df")
     hist_enriched_df.printSchema()
-    df_schema = hist_enriched_df.schema
 
     #  enriched with adjusted_value from API
     # api_enriched_df = Map.apply(
@@ -214,7 +217,20 @@ def standardize_ltv(
     #     f = lambda row: row
     # ).toDF()
 
-    api_enriched_df = DynamicFrame.fromDF(hist_enriched_df, glueContext, 'api_enriched_df').toDF()
+    api_enriched_df = hist_enriched_df.withColumn(
+        "ADJUSTED_VALUE",
+        F.when(
+            F.col('ADJUSTED_VALUE').isNull(),
+            retrieveAdjustedValueUDF(
+                F.col('VIN_NUM'),
+                F.col('TRIM_API'),
+                F.col('EST_AMT_FINANCED'),
+                F.col('BOOK_KEY'),
+                F.col('MILEAGE'),
+                F.col('SBMT_date')
+            )
+        ).otherwise(F.col("ADJUSTED_VALUE"))
+    )
 
     # api_casted_df = spark.createDataFrame(api_enriched_df.rdd, df_schema).cache()
 
@@ -238,21 +254,38 @@ def standardize_ltv(
     return ltv_df
 
 
-def __retrieve_adjusted_value(row):
-    # est_amt_financed = row.get("EST_AMT_FINANCED")
-    # book_key = row.get("BOOK_KEY")
-    # mileage = row.get('MILEAGE')
-    # sbmt_date = row.get('SBMT_date')
-    # adjusted_value = row.get("ADJUSTED_VALUE")
+def retrieve_adj_value(book_key):
+    pre_adj_value = choice(adj_values)
+    if not pre_adj_value:
+        return pre_adj_value
+    if not book_key:
+        return pre_adj_value
+    return pre_adj_value + 2000
 
-    # if not est_amt_financed or not mileage or not sbmt_date:
-    #     return row
 
-    # # if not adjusted_value:
-    #     # if not book_key:
-    #     #     row = __retrieve_book_key(row)
-    #     # row = __retrieve_adjvalue_from_api(row)
-    return row
+@F.udf(returnType=DoubleType())
+def retrieveAdjustedValueUDF(
+    vin_num,
+    trim_api,
+    est_amt_financed,
+    book_key,
+    mileage,
+    sbmt_date
+):
+    if not est_amt_financed or not mileage or not sbmt_date:
+        return None
+
+    if not book_key:
+        book_key = choice(book_keys)
+    adjusted_value = retrieve_adj_value(book_key)
+    #     book_key = _retrieve_book_key(vin_num, trim_api)
+    # adjusted_value = _retrieve_adjvalue_from_api(
+    #     vin_num,
+    #     book_key,
+    #     mileage,
+    #     sbmt_date
+    # )
+    return None if adjusted_value is None else adjusted_value
 
 
 def __retrieve_book_key(row):
@@ -445,11 +478,23 @@ print("after_deduplication")
 print(df.count())
 df.printSchema()
 
+ded_schema = df.schema
+
 df = standardize_ltv(df, history_df, book_keys_df).cache()
 
 print("after_standardize_ltv")
 print(df.count())
 df.printSchema()
+stand_ltv_schema = df.schema
+
+print('ded - stand')
+print()
+print(set(ded_schema) - set(stand_ltv_schema))
+print()
+print('stand  dep')
+print()
+print(set(stand_ltv_schema) - set(ded_schema))
+
 
 df = df.repartition(df.DEAL_ID)
 

@@ -32,7 +32,7 @@ df_with_is_eur = cur_df.withColumn(
     sf.when(
         sf.col('currency') == 'EUR',
         sf.lit(True)
-    ).otherwise(False)
+    ).otherwise(False).cast(st.IntegerType())
 )
 
 df_with_is_eur.show()

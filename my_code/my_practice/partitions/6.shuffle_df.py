@@ -15,6 +15,8 @@ of partitions of RDD/DataFrame using:
 - through code.
 
 """
+import random
+
 from pyspark import RDD
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
@@ -23,23 +25,61 @@ import pyspark.sql.types as st
 from my_code import ROOT
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
+spark.conf.set('spark.sql.shuffle.partitions', '50')
+
 sc = spark.sparkContext
 
-text_rdd = sc.textFile(f'{ROOT}/source_data/Gutenberg/pg19337.txt')
+names = [
+    'Martin',
+    'Alex',
+    'Peter',
+    'Lena',
+    'Olya',
+    'Tanya',
+    'Zhanna',
+    'Ira',
+    'Anya',
+    'Nadya',
+    'Andrew',
+    'Gallya',
+    'Semen',
+]
 
-print(text_rdd.getNumPartitions())  # 2
+large_data = [(random.choice(names), random.randrange(1000, 15000)) for i in range(1000000)]
+large_schema = ('name', 'salary')
 
-mapped_rdd = text_rdd.flatMap(lambda x: x.split(' ')).map(lambda w: (w, 1))
 
-print(mapped_rdd.getNumPartitions())  # 2
+df = spark.createDataFrame(large_data, large_schema).cache()
+age_df = spark.createDataFrame([(name, random.randrange(5, 70)) for name in names], ['name', 'age'])
+age_df.show()
+df.show()
+print(df.count())
+print(df.rdd.getNumPartitions())  # 8
+print(age_df.rdd.getNumPartitions())  # 8
 
-reduced_rdd = mapped_rdd.reduceByKey(lambda x, y: x + y)
 
-# Both getNumPartitions from the above examples
-# return the same number of partitions.
-# Though reduceByKey() triggers data shuffle,
-# it doesn’t change the partition count
-# as RDD’s inherit the partition size from parent RDD.
+# types of joins
 
-print(reduced_rdd.getNumPartitions())  # 2
-print(reduced_rdd.collect())
+# broadcast  (Broadcast Hash Join) - does not change shuffle_partitions as there is no any shuffles
+# MERGE, SHUFFLE_HASH -  200 by default or according spark.sql.shuffle.partitions
+#  SHUFFLE_REPLICATE_NL  -  64 with dif keys in every partitions
+
+joined = df.join(
+    age_df.hint('SHUFFLE_REPLICATE_NL'),  # broadcast, MERGE, SHUFFLE_HASH
+    on='name',
+    how='inner'
+).cache()
+
+joined.printSchema()
+joined.show()
+print(joined.count())
+print(joined.rdd.getNumPartitions())  # 50 or 200 by default
+
+
+(
+    joined
+    .write
+    .format("json")
+    .mode("overwrite")
+    .save(f"{ROOT}/my_code/my_practice/partitions/tmp/json")
+)

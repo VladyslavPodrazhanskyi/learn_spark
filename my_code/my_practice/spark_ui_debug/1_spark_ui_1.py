@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame, Row
 import pyspark.sql.types as st
 import pyspark.sql.functions as sf
-from code import ROOT
+from my_code import ROOT
 
 # http://192.168.100.3:4040/
 

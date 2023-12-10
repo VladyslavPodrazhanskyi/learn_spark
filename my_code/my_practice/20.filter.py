@@ -22,14 +22,27 @@ cur_df = spark.createDataFrame(
         ('value', 'UAH', 32.54),
         ('value', 'EUR', 1.0),
         ('value', 'UAH', 32.54),
+        ('value', None, 32.54),
     ],
     schema=schema
 )
 
 cur_df.show()
-cur_df.filter(
-    (sf.col('currency') != 'EUR')
-    | (sf.col('cur_value') != '1.19')
-).show()
+
+cur_df = cur_df.filter(
+    sf.col("currency") != "EUR"
+)
+
+cur_df.show()
+
+
+
+# print(
+#     'count',
+#     cur_df.filter(
+#         ~ sf.col('currency').isin(['EUR'])
+#         | (sf.col('cur_value') != '1.19')
+#     ).count()
+# )
 
 

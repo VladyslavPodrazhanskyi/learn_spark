@@ -6,7 +6,7 @@ import pyspark.sql.types as T
 import pyspark.sql.functions as F
 
 # from utils import get_project_root
-from code.utils import get_project_root
+from my_code.utils import get_project_root
 
 ROOT = get_project_root()
 print(ROOT)
@@ -33,7 +33,7 @@ spark = SparkSession.builder \
 # schema = T.StructType([
 #     T.StructField('GASS Code', T.StringType()),
 #     T.StructField('Description', T.StringType()),
-#     T.StructField('AMA code', T.StringType()),
+#     T.StructField('AMA my_code', T.StringType()),
 #     T.StructField('Fourth', T.StringType()),
 #     T.StructField('Fifth', T.StringType()),
 # ])

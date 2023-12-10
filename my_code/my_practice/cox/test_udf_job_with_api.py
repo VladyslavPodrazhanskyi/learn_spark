@@ -65,8 +65,8 @@ BASE_URL = "https://api.coxautoguidebooks.com"
 
 secret_dtv_key = get_secret(args["DTVApiSecretName"])["api_key"]
 
-book_keys = ['book_key_1', 'book_key_2', 'book_key_3', None]
-adj_values = [10000.0, 20000.0, None]
+# book_keys = ['book_key_1', 'book_key_2', 'book_key_3', None]
+# adj_values = [10000.0, 20000.0, None]
 
 
 data_science_bucket_name = args['DataScienceBucketName']
@@ -185,7 +185,7 @@ def calculate_quantile(df, columns, quantile):
 def standardize_ltv(
     main_df: DataFrame,
     historical_df: DataFrame,
-    book_keys_df: DataFrame,
+    bk_keys_df: DataFrame,
 ) -> DataFrame:
     # rename old ltv and prepare df for enrichment
     prepared_df = (
@@ -203,19 +203,13 @@ def standardize_ltv(
         on=['VIN_NUM', 'TRIM_API', 'MILEAGE', 'SBMT_date'],
         how='left'
     ).join(
-        book_keys_df,
+        bk_keys_df,
         on=['VIN_NUM', 'TRIM_API', ],
         how='left'
     ).cache()
 
     print("hist_enriched_df")
     hist_enriched_df.printSchema()
-
-    #  enriched with adjusted_value from API
-    # api_enriched_df = Map.apply(
-    #     frame=DynamicFrame.fromDF(hist_enriched_df, glueContext, 'api_enriched_df'),  # .repartition(50)
-    #     f = lambda row: row
-    # ).toDF()
 
     api_enriched_df = hist_enriched_df.withColumn(
         "ADJUSTED_VALUE",
@@ -231,11 +225,6 @@ def standardize_ltv(
             )
         ).otherwise(F.col("ADJUSTED_VALUE"))
     )
-
-    # api_casted_df = spark.createDataFrame(api_enriched_df.rdd, df_schema).cache()
-
-    # print("api_enriched_df")
-    # api_casted.printSchema()
 
     print("hist_enriched_df - api_enriched_df")
     print(set(hist_enriched_df.schema) - set(api_enriched_df.schema))
@@ -254,15 +243,6 @@ def standardize_ltv(
     return ltv_df
 
 
-def retrieve_adj_value(book_key):
-    pre_adj_value = choice(adj_values)
-    if not pre_adj_value:
-        return pre_adj_value
-    if not book_key:
-        return pre_adj_value
-    return pre_adj_value + 2000
-
-
 @F.udf(returnType=DoubleType())
 def retrieveAdjustedValueUDF(
     vin_num,
@@ -276,23 +256,18 @@ def retrieveAdjustedValueUDF(
         return None
 
     if not book_key:
-        book_key = choice(book_keys)
-    adjusted_value = retrieve_adj_value(book_key)
-    #     book_key = _retrieve_book_key(vin_num, trim_api)
-    # adjusted_value = _retrieve_adjvalue_from_api(
-    #     vin_num,
-    #     book_key,
-    #     mileage,
-    #     sbmt_date
-    # )
+        book_key = _retrieve_book_key(vin_num, trim_api)
+    adjusted_value = _retrieve_adjvalue_from_api(
+        vin_num,
+        book_key,
+        mileage,
+        sbmt_date
+    )
     return None if adjusted_value is None else adjusted_value
 
 
-def __retrieve_book_key(row):
-    time.sleep(0.5)
-    vin_num = row.get('VIN_NUM')
-    trim = row.get("TRIM_API")
-
+def _retrieve_book_key(vin_num, trim_api):
+    time.sleep(0.005 * 5)
     vehicle_book_url = f"{BASE_URL}/chromeusa/vin"
     authorization_header = {'x-api-key': secret_dtv_key}
     retrieve_book_mapping = True
@@ -301,7 +276,7 @@ def __retrieve_book_key(row):
         url=vehicle_book_url,
         params={
             'vin': vin_num,
-            'trimHint': trim,
+            'trimHint': trim_api,
             'retrieveBookMapping': retrieve_book_mapping
         },
         headers=authorization_header
@@ -310,24 +285,25 @@ def __retrieve_book_key(row):
     vehicle_book_key = None
 
     if vehicle_book_resp.status_code != 200 or vehicle_book_resp.json() == 0:  # or is none ???
-        row["book_key"] = vehicle_book_key
-        return row
+        book_key = vehicle_book_key
 
-    vehicle_book_resp_json = vehicle_book_resp.json()
+    else:
+        vehicle_book_resp_json = vehicle_book_resp.json()
 
-    for book_mapping in vehicle_book_resp_json['Books'][0]['BookMappings']:
-        if book_mapping.get('Name') == 'KelleyBlueBook':
-            vehicle_book_key = book_mapping.get('VehicleBookKey')
+        for book_mapping in vehicle_book_resp_json['Books'][0]['BookMappings']:
+            if book_mapping.get('Name') == 'KelleyBlueBook':
+                vehicle_book_key = book_mapping.get('VehicleBookKey')
 
-    row["book_key"] = vehicle_book_key
-    return row
+        book_key = vehicle_book_key
+    return book_key
 
 
-def __retrieve_adjvalue_from_api(row):
-    vin_num = row.get('VIN_NUM')
-    book_key = row.get("BOOK_KEY")
-    mileage = row.get('MILEAGE')
-    sbmt_date = row.get('SBMT_date')
+def _retrieve_adjvalue_from_api(
+    vin_num,
+    book_key,
+    mileage,
+    sbmt_date
+):
 
     authorization_header = {'x-api-key': secret_dtv_key}
 
@@ -365,12 +341,7 @@ def __retrieve_adjvalue_from_api(row):
         )
         adjusted_value = __validate_parse_book_response(value_vehicle_response)
 
-    if adjusted_value is None:
-        row["ADJUSTED_VALUE"] = None
-        return row
-
-    row['ADJUSTED_VALUE'] = adjusted_value
-    return row
+    return adjusted_value
 
 
 def __validate_parse_book_response(response: requests.Response):

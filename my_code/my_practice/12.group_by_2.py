@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Tuple
 
 from pyspark.sql import SparkSession, DataFrame, Row
@@ -44,6 +45,16 @@ print(
     "count_distinct:",
     df.select(sf.countDistinct("salary")).collect()[0][0]
 )
+
+sal_interval = df.select(
+    sf.min(sf.col('salary')).alias('min_sal'),
+    sf.max(sf.col('salary')).alias('max_sal')
+).limit(1).collect()[0]
+
+print(sal_interval)  # Row(min_sal=2000, max_sal=4600)
+
+print(sal_interval.min_sal)
+print(sal_interval.max_sal)
 
 # approx_count_distinct('salary')
 print(

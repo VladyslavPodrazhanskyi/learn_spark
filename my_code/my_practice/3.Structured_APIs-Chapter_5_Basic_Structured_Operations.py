@@ -50,7 +50,7 @@ df2.printSchema()
 #  |-- ORIGIN_COUNTRY_NAME: string (nullable = true)
 #  |-- number: string (nullable = true)
 
-# code is not working as it is possible to ref to column only in the context of df
+# my_code is not working as it is possible to ref to column only in the context of df
 # from pyspark.sql.functions import col, column
 # col("someColumnName")
 # column("someColumnName")

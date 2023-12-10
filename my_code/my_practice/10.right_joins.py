@@ -27,9 +27,12 @@ right_df = spark.createDataFrame(
     ("com_col1", "com_col2", "com_col3", "rcol1", "rcol2")
 )
 
+left_df = left_df.fillna('n/a', subset='com_col3')
+
+
 left_joined_df = left_df.join(
     right_df,
-    on=["com_col1", "com_col2", "com_col3"],
+    on=["l1com_co", "com_col2", "com_col3"],
     how='inner'
 )
 

@@ -3,7 +3,7 @@ from typing import Callable
 from pyspark.sql import SparkSession, DataFrame
 import pyspark.sql.types as st
 import pyspark.sql.functions as sf
-from code import ROOT
+from my_code import ROOT
 
 # http://192.168.100.3:4040/
 
@@ -62,8 +62,8 @@ def outer_modulo(
 
 # Transform-enabled functions are not necessary to write performant and maintainable
 # programs. On the other hand, they enable us to embed arbitrary logic through the
-# transform method, which keeps the method-chaining code organization pattern. This
-# yields cleaner, more readable code.
+# transform method, which keeps the method-chaining my_code organization pattern. This
+# yields cleaner, more readable my_code.
 
 
 df.transform(

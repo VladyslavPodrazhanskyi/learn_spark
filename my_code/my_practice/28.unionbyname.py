@@ -5,30 +5,6 @@ import pyspark.sql.types as st
 import pyspark.sql.functions as sf
 
 
-def process_postalcode(input_df: DataFrame) -> DataFrame:
-
-    process_postalcode_df = input_df.withColumn(
-        "processed_postalcode",
-        sf.when(
-            (sf.length(sf.col("postalcode")) == 3)
-            & (sf.col("postalcode") != 'n/a'),
-            sf.concat(sf.lit('00'), sf.col("postalcode"))
-        ).when(
-            sf.length(sf.col("postalcode")) == 4,
-            sf.concat(sf.lit('0'), sf.col("postalcode"))
-        ).when(
-            sf.length(sf.col("postalcode")) == 8,
-            sf.concat(sf.lit('0'), sf.substring(sf.col("postalcode"), 1, 4))
-        ).when(
-            sf.length(sf.col("postalcode")) == 9,
-            sf.substring(sf.col("postalcode"), 1, 5)
-        ).otherwise(
-            sf.col("postalcode")
-        )
-    )
-    return process_postalcode_df
-
-
 if __name__ == '__main__':
 
     spark = (
@@ -40,29 +16,57 @@ if __name__ == '__main__':
 
     # spark.sparkContext.setLogLevel("INFO")
 
-    schema = st.StructType([
+    first_schema = st.StructType([
         st.StructField("id", st.IntegerType(), True),
         st.StructField("postalcode", st.StringType(), True),
+        st.StructField("col1", st.StringType(), True),
         st.StructField("col2", st.StringType(), True),
-        st.StructField("col3", st.StringType(), True),
     ])
 
-    cur_df = spark.createDataFrame(
+    second_schema = st.StructType([
+        st.StructField("id", st.IntegerType(), True),
+        st.StructField("col1", st.StringType(), True),
+        st.StructField("col2", st.StringType(), True),
+    ])
+
+    first_df = spark.createDataFrame(
         [
-            (1, "n/a", "abcdfskfj", "23487jhk"),
-            (2, "123", "abcdfskfj", "23487jhk"),
-            (3, "1234", "abcdfskfj", "23487jhk"),
-            (4, "12345", "abcdfskfj", "23487jhk"),
-            (5, "123456", "abcdfskfj", "23487jhk"),
-            (6, "1234567", "abcdfskfj", "23487jhk"),
-            (7, "12345678", "abcdfskfj", "23487jhk"),
-            (8, "123456789", "abcdfskfj", "23487jhk"),
+            (11, "n/a", "abcdfskfj", "23487jhk"),
+            (12, "123", "abcdfskfj", "23487jhk"),
+            (13, "1234", "abcdfskfj", "23487jhk"),
+            (14, "12345", "abcdfskfj", "23487jhk"),
+            (15, "123456", "abcdfskfj", "23487jhk"),
+            (16, "1234567", "abcdfskfj", "23487jhk"),
+            (17, "12345678", "abcdfskfj", "23487jhk"),
+            (18, "123456789", "abcdfskfj", "23487jhk"),
         ],
-        schema=schema
+        schema=first_schema
     )
 
-    processed_df = process_postalcode(cur_df)
+    second_df = spark.createDataFrame(
 
-    processed_df.show()
+        [
+            (21, "abcdfskfj", "23487jhk"),
+            (22, "abcdfskfj", "23487jhk"),
+            (23, "abcdfskfj", "23487jhk"),
+            (24, "abcdfskfj", "23487jhk"),
+            (25, "abcdfskfj", "23487jhk"),
+            (26, "abcdfskfj", "23487jhk"),
+            (27, "abcdfskfj", "23487jhk"),
+            (28, "abcdfskfj", "23487jhk"),
+        ],
 
+        schema=second_schema
+    ).withColumn(
+        "postalcode",
+        sf.lit(None)
+    )
 
+    first_df.show()
+    second_df.show()
+
+    union_df = first_df.unionByName(
+        second_df
+    )
+
+    union_df.show()

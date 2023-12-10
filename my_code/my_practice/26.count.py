@@ -30,6 +30,8 @@ cur_df = spark.createDataFrame(
     schema=schema
 )
 
+print(cur_df.rdd.getNumPartitions())  # 8
+
 cur_df.show()
 
 # count1 - method and count2 - function are different functions

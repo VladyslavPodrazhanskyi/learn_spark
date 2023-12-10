@@ -6,24 +6,55 @@ from pyspark.context import SparkContext
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 
-from code import ROOT
+from my_code import ROOT
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
+
+# spark.sparkContext.setLogLevel("INFO")
+
+# spark catalog
 catalog = spark.catalog
 pprint(catalog.__sizeof__())
 pprint(catalog.listDatabases())
 pprint(catalog.listTables())
 
-df = spark.read.format("json").load(f"{ROOT}/data/flight-data/json/")
+# spark reader
+df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/")
+
+
+df = df.withColumnRenamed("ORIGIN_COUNTRY_NAME", "renamed_ORIGIN_COUNTRY_NAME")
+
 df.show()
-print(df.count())
+print(df.count())  # 1502
+df.printSchema()
+print(df.schema)
 
-print(df.select('count').rdd)  # MapPartitionsRDD[27] at javaToPython at NativeMethodAccessorImpl.java:0
-print(df.select('count').rdd.max())  # Row(count=370002)
-print(df.select('count').rdd.max()[0])
 
-print(df.select(sf.max('count').alias('max')).collect()[0]['max'])
+time.sleep(600)
+spark.stop()
+
+
+
+
+
+# df_with_five = df.withColumn("five", sf.lit(5.0))
+# print(set(df_with_five.schema) - set(df.schema))
+# print(set(df.schema) - set(df_with_five.schema))
+#
+# print(set(df.schema) -  set())
+
+
+#
+# print(df.select('count').rdd)  # MapPartitionsRDD[27] at javaToPython at NativeMethodAccessorImpl.java:0
+# print(df.select('count').rdd.max())  # Row(count=370002)
+# print(df.select('count').rdd.max()[0])
+#
+# print(df.select(sf.max('count').alias('max')).collect()[0]['max'])
+
+
+
+
 #
 # df.select("ORIGIN_COUNTRY_NAME", "count").show(5)
 # df.selectExpr("ORIGIN_COUNTRY_NAME", "count").show(5)
@@ -60,28 +91,27 @@ print(df.select(sf.max('count').alias('max')).collect()[0]['max'])
 #
 #
 #
-print("sqlWay")
+# print("sqlWay")
+#
+# # temporary view for query with SQL
+# df.createOrReplaceTempView("dfTable")
+#
+# sqlWayWithinCountry = spark.sql(
+#     """
+#     SELECT *,
+#     (DEST_COUNTRY_NAME = ORIGIN_COUNTRY_NAME) as withinCountry
+#     FROM dfTable
+#     """
+# ).filter(sf.col('withinCountry')).show(12)
+#
+# pprint(catalog.listTables()) # [Table(name='dftable', database=None, description=None, tableType='TEMPORARY', isTemporary=True)]
 
-# temporary view for query with SQL
-df.createOrReplaceTempView("dfTable")
 
-sqlWayWithinCountry = spark.sql(
-    """
-    SELECT *,
-    (DEST_COUNTRY_NAME = ORIGIN_COUNTRY_NAME) as withinCountry
-    FROM dfTable
-    """
-).filter(sf.col('withinCountry')).show(12)
-
-pprint(catalog.listTables()) # [Table(name='dftable', database=None, description=None, tableType='TEMPORARY', isTemporary=True)]
+# sqlWay = spark.sql("""
+# SELECT
+# DEST_COUNTRY_NAME, Sum(count) as sum
+# FROM dfTable
+# GROUP BY DEST_COUNTRY_NAME
+# ORDER by sum DESC""").show(10)
 
 
-sqlWay = spark.sql("""
-SELECT
-DEST_COUNTRY_NAME, Sum(count) as sum
-FROM dfTable
-GROUP BY DEST_COUNTRY_NAME
-ORDER by sum DESC""").show(10)
-
-time.sleep(600)
-spark.stop()
