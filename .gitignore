@@ -127,19 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# pyenv
-.python-version
-
-# Environments
-.env
-.venv
-venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 pythonenv*
 
 ### IDE ###
@@ -151,14 +138,7 @@ cython_debug/
 
 metastore_db
 derby.log
-/source_data/cox_data/api/dri_fni_08222022.csv
-/source_data/cox_data/api/dri_fni_08232022.csv
-/source_data/cox_data/api/dri_fni_08242022.csv
-/source_data/cox_data/api/dri_fni_08252022.csv
-/source_data/cox_data/api/dri_fni_08262022.csv
-/source_data/cox_data/api/dri_fni_08272022.csv
-/source_data/cox_data/api/dri_fni_08282022.csv
-/source_data/cox_data/api/dri_fni_08292022.csv
-/source_data/cox_data/api/dri_fni_08302022.csv
-/source_data/cox_data/api/dri_fni_08312022.csv
-/source_data/cox_data/api/dri_fni_09012022.csv
+
+
+result_data/
+checkpoints/
