@@ -1,3 +1,6 @@
+
+
+
 static = spark.read.json("/source_data/activity-source_data/")
 dataSchema = static.schema
 

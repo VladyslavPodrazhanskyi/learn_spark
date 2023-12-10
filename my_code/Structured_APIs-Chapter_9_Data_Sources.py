@@ -1,3 +1,12 @@
+from pyspark import RDD
+from pyspark.sql import SparkSession
+import pyspark.sql.functions as sf
+import pyspark.sql.types as st
+
+from my_code import ROOT
+
+spark = SparkSession.builder.master("local[*]").getOrCreate()
+
 csvFile = spark.read.format("csv")\
   .option("header", "true")\
   .option("mode", "FAILFAST")\
@@ -83,10 +92,10 @@ dbDataFrame = spark.read.format("jdbc")\
 
 
 # COMMAND ----------
-
-dbDataFrame = spark.read.format("jdbc")\
-  .option("url", url).option("dbtable", tablename).option("driver",  driver)\
-  .option("numPartitions", 10).load()
+#
+# dbDataFrame = spark.read.format("jdbc")\
+#   .option("url", url).option("dbtable", tablename).option("driver",  driver)\
+#   .option("numPartitions", 10).load()
 
 
 # COMMAND ----------
@@ -111,17 +120,17 @@ spark.read.jdbc(url, tablename, predicates=predicates, properties=props).count()
 
 # COMMAND ----------
 
-colName = "count"
-lowerBound = 0L
-upperBound = 348113L # this is the max count in our database
-numPartitions = 10
+# colName = "count"
+# lowerBound = 0L
+# upperBound = 348113L # this is the max count in our database
+# numPartitions = 10
 
 
 # COMMAND ----------
 
-spark.read.jdbc(url, tablename, column=colName, properties=props,
-                lowerBound=lowerBound, upperBound=upperBound,
-                numPartitions=numPartitions).count() # 255
+# spark.read.jdbc(url, tablename, column=colName, properties=props,
+#                 lowerBound=lowerBound, upperBound=upperBound,
+#                 numPartitions=numPartitions).count() # 255
 
 
 # COMMAND ----------
