@@ -6,9 +6,9 @@ import pyspark.sql.functions as sf
 
 spark = (
     SparkSession
-        .builder
-        .master("local[*]")
-        .getOrCreate()
+    .builder
+    .master("local[*]")
+    .getOrCreate()
 )
 
 itemsSchema = "id integer, name string, price float"

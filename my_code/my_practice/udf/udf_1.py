@@ -7,10 +7,10 @@ from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 import pyspark.sql.types as st
 
-
 from my_code import ROOT
 
 
+# 1st method of create and register UDF
 def square(x):
     return x ** 2
 
@@ -18,13 +18,13 @@ def square(x):
 squareUDF = sf.udf(lambda x: square(x), st.LongType())
 
 
+# 2nd method of create and register UDF (with decorator)
 @sf.udf(returnType=st.LongType())
 def cubeUDF(x):
     return x ** 3
 
 
 if __name__ == '__main__':
-
     spark = SparkSession.builder.master("local[*]").getOrCreate()
 
     df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/")
@@ -34,17 +34,13 @@ if __name__ == '__main__':
     print(df.schema)
 
     df = df.withColumn(
-        "count", squareUDF(sf.col('count'))
+        "square_count", squareUDF(sf.col('count'))
+    ).withColumn(
+        "cube_count", cubeUDF(sf.col('count'))
     )
 
-    # df = df.withColumn(
-    #     "square_count", squareUDF(sf.col('count'))
-    # ).withColumn(
-    #     "cube_count",
-    #     cubeUDF(sf.col('count'))
-    # )
-
-    # df = df.select("count", squareUDF(sf.col('count')).alias('selected_square'))
     df.show()
+    print(df.count())
+    print(df.schema)
 
     spark.stop()

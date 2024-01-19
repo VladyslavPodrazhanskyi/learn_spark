@@ -1,9 +1,12 @@
+from my_code import ROOT
+
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
+import pyspark.sql.types as T
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
-df = spark.read.format("json").load("source_data/flight-source_data/json/2015-summary.json")
+df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/2015-summary.json")
 
 # Schemas
 # A schema defines the column names and types of a DataFrame. We can either let a source_data source
@@ -16,51 +19,58 @@ df = spark.read.format("json").load("source_data/flight-source_data/json/2015-su
 # working with untyped source_data sources like CSV and JSON because schema inference can vary depending
 # on the type of source_data that you read in.
 
-print(df.schema)
-# Schema - StructType, made of fields
 
+# Schema - StructType, made of fields
+print(df.schema)    # StructType(List(StructField(DEST_COUNTRY_NAME,StringType,true),StructField(ORIGIN_COUNTRY_NAME,StringType,true),StructField(count,LongType,true)))
 # StructType(List(
 #      StructField(DEST_COUNTRY_NAME,StringType,true),
 #      StructField(ORIGIN_COUNTRY_NAME,StringType,true),
 #      StructField(count,LongType,true)
 #      ))
+
+
 df.show()
 
 
 # How to create and enforce a specific schema on a DataFrame
 
-from pyspark.sql.types import StructField, StructType, StringType, LongType
 
-myManualSchema = StructType([
-  StructField("DEST_COUNTRY_NAME", StringType(), True),
-  StructField("ORIGIN_COUNTRY_NAME", StringType(), True),
-  StructField("count", LongType(), False, metadata={"hello":"world"})
+myManualSchema = T.StructType([
+  T.StructField("DEST_COUNTRY_NAME", T.StringType(), True),
+  T.StructField("ORIGIN_COUNTRY_NAME", T.StringType(), True),
+  T.StructField("count", T.LongType(), False, metadata={"hello": "world"})
 ])
 
-# df = spark.read.format("json").schema(myManualSchema)\
-#   .load("/source_data/flight-source_data/json/2015-summary.json")
 
-df2 = spark.read.format("json").schema(myManualSchema).load("source_data/flight-source_data/json/2015-summary.json")
+df2 = (
+  spark
+  .read.format("json")
+  .schema(myManualSchema)
+  .load(f"{ROOT}/source_data/flight-data/json/2015-summary.json")
+)
+
+
 print("df2")
 print(df2.columns)
 # ['DEST_COUNTRY_NAME', 'ORIGIN_COUNTRY_NAME', 'number']
+
 df2.printSchema()
 # root
 #  |-- DEST_COUNTRY_NAME: string (nullable = true)
 #  |-- ORIGIN_COUNTRY_NAME: string (nullable = true)
 #  |-- number: string (nullable = true)
 
-# my_code is not working as it is possible to ref to column only in the context of df
-# from pyspark.sql.functions import col, column
-# col("someColumnName")
-# column("someColumnName")
+
+print(F.col("someColumnName"))                     #   Column<'someColumnName'>
+print(type(F.col("someColumnName")))               #   <class 'pyspark.sql.column.Column'>
+
+print(F.column("someColumnName"))                  #   Column<'someColumnName'>
 
 print(df2.first())
 df.show()
 
 
-# from pyspark.sql.functions import expr
-# expr("(((someCol + 5) * 200) - 6) < otherCol")
+print(F.expr("(((someCol + 5) * 200) - 6) < otherCol"))  # Column<'((((someCol + 5) * 200) - 6) < otherCol)'>
 
 
 

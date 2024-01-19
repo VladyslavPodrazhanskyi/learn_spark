@@ -11,6 +11,7 @@ import pyspark.sql.types as st
 @sf.udf(returnType=st.DoubleType())
 def cubeUDF(x):
     return None if x is None else x ** 3
+    # return x ** 3   TypeError: unsupported operand type(s) for ** or pow(): 'NoneType' and 'int'
 
 
 if __name__ == '__main__':
@@ -42,20 +43,6 @@ if __name__ == '__main__':
     df.show()
     print(df.count())
     print(df.schema)
-
-    # df = df.withColumn(
-    #     "count", squareUDF(sf.col('count'))
-    # )
-
-    # df = df.withColumn(
-    #     "square_count", squareUDF(sf.col('count'))
-    # ).withColumn(
-    #     "cube_count",
-    #     cubeUDF(sf.col('count'))
-    # )
-
-    # df = df.select("count", squareUDF(sf.col('count')).alias('selected_square'))
-    # df.show()
 
     spark.stop()
 

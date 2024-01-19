@@ -14,16 +14,18 @@ spark = SparkSession.builder.master("local[*]").getOrCreate()
 # spark.sparkContext.setLogLevel("INFO")
 
 # spark catalog
-catalog = spark.catalog
-pprint(catalog.__sizeof__())
-pprint(catalog.listDatabases())
-pprint(catalog.listTables())
+# catalog = spark.catalog
+# pprint(catalog.__sizeof__())
+# pprint(catalog.listDatabases())
+# pprint(catalog.listTables())
+
+# UI: http://127.0.0.1:4040/jobs/
 
 # spark reader
 df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/")
 
-
 df = df.withColumnRenamed("ORIGIN_COUNTRY_NAME", "renamed_ORIGIN_COUNTRY_NAME")
+
 
 df.show()
 print(df.count())  # 1502
@@ -33,9 +35,6 @@ print(df.schema)
 
 time.sleep(600)
 spark.stop()
-
-
-
 
 
 # df_with_five = df.withColumn("five", sf.lit(5.0))
