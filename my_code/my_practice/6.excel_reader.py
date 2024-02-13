@@ -1,14 +1,10 @@
-from pprint import pprint
-from typing import Optional
-
 from pyspark.sql import SparkSession, DataFrame
 import pyspark.sql.types as T
 import pyspark.sql.functions as F
 
 # from utils import get_project_root
-from my_code.utils import get_project_root
+from my_code.utils import ROOT
 
-ROOT = get_project_root()
 print(ROOT)
 
 jars = [
@@ -39,53 +35,59 @@ spark = SparkSession.builder \
 # ])
 
 
-# reader = spark.read\
-#     .format("com.crealytics.spark.excel")\
-#     .option("header", True)
-#
-# if schema:
-#     reader = reader.schema(schema)
-# else:
-#     reader = reader.option("inferSchema", True)
-#
-#
-# df = reader.load(f'{ROOT}/source_data/test_excel_file.xlsx')
-#
-# df.show(245, truncate=False)
-# df.printSchema()
-# print(df.count())
-#
-# for field in df.schema:
-#     if isinstance(field.dataType, T.DoubleType):
-#         # df = df.withColumn(field.name, F.col(field.name).cast('integer').cast('string'))
-#         df = df.withColumn(field.name, F.col(field.name)*4)
-#
-#
-# df.show(245, truncate=False)
-# df.printSchema()
-# print(df.count())
+reader = (
+    spark.read
+    .format("com.crealytics.spark.excel")
+    .option("header", True)
+)
+
+schema = T.StructType([
+    T.StructField('first_col', T.StringType()),
+    T.StructField('column2', T.StringType()),
+    T.StructField('column3', T.IntegerType())
+])
 
 
-def extract(
-    path: str,
-    schema: Optional[T.StructType] = None
-) -> DataFrame:
-    reader = (
-        spark
-        .read
-        .format("com.crealytics.spark.excel")
-        .option("header", True)
-        .option("inferSchema", False)
-    )
-    if schema:
-        reader = reader.schema(schema)
-    loaded_df = reader.load(path)
-    return loaded_df.na.drop("all")
+if schema:
+    reader = reader.schema(schema)
+else:
+    reader = reader.option("inferSchema", True)
 
 
-excel_df = extract(f'{ROOT}/data/gl_accounts_iafa_20220128_142516.xlsx')
-excel_df.show(excel_df.count(), truncate=True)
-print(excel_df.count())
+df = reader.load(f'{ROOT}/source_data/test_excel_file.xlsx').cache()
+df.show(truncate=False)
+df.printSchema()
+
+for field in df.schema:
+    if isinstance(field.dataType, T.IntegerType):
+        df = df.withColumn(f'{field.name}_cast_to_doubled', F.col(field.name).cast('double'))
+        df = df.withColumn(f'{field.name}_mult_four', F.col(field.name)*4)
+
+df.show(truncate=False)
+df.printSchema()
+print(df.count())
+
+
+# def extract(
+#     path: str,
+#     schema: Optional[T.StructType] = None
+# ) -> DataFrame:
+#     reader = (
+#         spark
+#         .read
+#         .format("com.crealytics.spark.excel")
+#         .option("header", True)
+#         .option("inferSchema", False)
+#     )
+#     if schema:
+#         reader = reader.schema(schema)
+#     loaded_df = reader.load(path)
+#     return loaded_df.na.drop("all")
+#
+#
+# excel_df = extract(f'{ROOT}/data/gl_accounts_iafa_20220128_142516.xlsx')
+# excel_df.show(excel_df.count(), truncate=True)
+# print(excel_df.count())
 
 
 #

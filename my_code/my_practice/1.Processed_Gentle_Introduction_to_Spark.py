@@ -41,14 +41,9 @@ flightData2015.sort("count", ascending=False).show()
     .show()
 )
 
-# COMMAND ----------
 
 # You can make any DataFrame into a table or view with one simple method call:
 flightData2015.createOrReplaceTempView("flight_data_2015")
-
-
-
-# COMMAND ----------
 
 sqlWay = spark.sql("""
 SELECT DEST_COUNTRY_NAME, Sum(count) AS sum
@@ -64,7 +59,7 @@ dataFrameWay = flightData2015 \
     .sum("count") \
     .withColumnRenamed("sum(count)", "sum") \
     .orderBy("sum", ascending=False)
-#
+
 
 (
     flightData2015

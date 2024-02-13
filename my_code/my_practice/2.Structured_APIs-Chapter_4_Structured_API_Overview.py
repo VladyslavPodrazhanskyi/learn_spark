@@ -5,6 +5,9 @@ import pyspark.sql.types as T
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
 df = spark.range(500).toDF("number")
+
+
+
 # df1 = df.select(df["number"] + 10).withColumnRenamed('(number + 10)', "new_number")
 df2 = df.select(F.col("number") + F.lit(10)).toDF("new_number")
 df2.show()

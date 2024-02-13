@@ -14,7 +14,7 @@ df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/2015-s
 # Deciding whether you need to define a schema prior to reading in your source_data depends on your use case.
 # For ad hoc analysis, schema-on-read usually works just fine (although at times it can be a bit slow with
 # plain-text file formats like CSV or JSON). However, this can also lead to precision issues like a long
-# type incorrectly set as an integer when reading in a file. When using Spark for production Extract,
+# type incorrectly set as an integer when reading in a file. When using Spark for producti(on Extract,
 # Transform, and Load (ETL), it is often a good idea to define your schemas manually, especially when
 # working with untyped source_data sources like CSV and JSON because schema inference can vary depending
 # on the type of source_data that you read in.
@@ -28,6 +28,16 @@ print(df.schema)    # StructType(List(StructField(DEST_COUNTRY_NAME,StringType,t
 #      StructField(count,LongType,true)
 #      ))
 
+print(type(df.schema))
+
+df.printSchema()
+"""
+root
+ |-- DEST_COUNTRY_NAME: string (nullable = true)
+ |-- ORIGIN_COUNTRY_NAME: string (nullable = true)
+ |-- count: long (nullable = true)
+
+"""
 
 df.show()
 
@@ -38,7 +48,7 @@ df.show()
 myManualSchema = T.StructType([
   T.StructField("DEST_COUNTRY_NAME", T.StringType(), True),
   T.StructField("ORIGIN_COUNTRY_NAME", T.StringType(), True),
-  T.StructField("count", T.LongType(), False, metadata={"hello": "world"})
+  T.StructField("count", T.IntegerType(), False, metadata={"hello": "world"})
 ])
 
 
