@@ -45,4 +45,12 @@ cur_df.show()
 #     ).count()
 # )
 
+"""
+# TODO
+mac_df = (
+    events_df
+    .where(events_df.device == "macOS")  # where("device == 'macOS'")
+    .orderBy("event_timestamp")        
+)
+""""
 

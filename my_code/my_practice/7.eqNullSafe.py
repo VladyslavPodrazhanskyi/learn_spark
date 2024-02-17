@@ -49,9 +49,42 @@ df.filter(~F.col('value').eqNullSafe(-1)).show()     # 25 and null included
 compare_values_df = spark.createDataFrame([
     Row(id=1, value1=25, value2=25, ),
     Row(id=2, value1=None, value2=None),
-    Row(id=2, value1=-1, value2=-4)
+    Row(id=3, value1=-1, value2=-4)
 ])
 
 compare_values_df.filter(F.col('value1') == F.col('value2')).show()
 
 compare_values_df.filter(F.col('value1').eqNullSafe(F.col('value2'))).show()
+
+
+# eqNullSafe join:
+
+right_df = spark.createDataFrame([
+    Row(idr=1, value1=25, value=None),
+    Row(idr=2, value1=None, value=45),
+    Row(idr=3, value1=-5, value=-6)
+])
+
+join_cond_eq = [compare_values_df.value1 == right_df.value1]
+join_cond_eqNullSafe = [compare_values_df.value1.eqNullSafe(right_df.value1)]
+
+compare_values_df.join(right_df, on=join_cond_eq, how='inner').show()
+''''
++---+------+------+---+------+-----+
+| id|value1|value2|idr|value1|value|
++---+------+------+---+------+-----+
+|  1|    25|    25|  1|    25| NULL|
++---+------+------+---+------+-----+
+'''
+
+compare_values_df.join(right_df, on=join_cond_eqNullSafe, how='inner').show()
+
+"""
++---+------+------+---+------+-----+
+| id|value1|value2|idr|value1|value|
++---+------+------+---+------+-----+
+|  2|  NULL|  NULL|  2|  NULL|   45|
+|  1|    25|    25|  1|    25| NULL|
++---+------+------+---+------+----
+"""
+
