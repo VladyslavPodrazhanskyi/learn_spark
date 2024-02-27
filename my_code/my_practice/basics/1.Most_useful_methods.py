@@ -1,5 +1,4 @@
 """"
-
 In pyspark there are:
 
 1) dataframe methods:
@@ -8,10 +7,13 @@ In pyspark there are:
 
 - withColumn
 - withColumnRenamed
-- groupBY
-- agg
 - filter
 - select
+- sort
+- join
+- selectExpr
+- groupBY ( for aggregations)
+
 
 1.2. Actions:
 
@@ -22,18 +24,70 @@ In pyspark there are:
 - write()
 - collect()
 
-2) pyspark.sql.functions(for column expressions):
+===========================================================================
 
-- sum
-- avg
-- col
-- col
+2) Grouped data methods:
+
+agg	           Compute aggregates by specifying a series of aggregate columns
+avg	           Compute the mean value for each numeric columns for each group
+count	       Count the number of rows for each group
+max	           Compute the max value for each numeric columns for each group
+mean	       Compute the average value for each numeric columns for each group
+min	           Compute the min value for each numeric column for each group
+pivot	       Pivots a column of the current DataFrame and performs the specified aggregation
+sum	           Compute the sum for each numeric columns for each group
+
+==============================================================
+
+3) pyspark.sql.functions(for column expressions):
+
+Built-In Functions
+In addition to DataFrame and Column transformation methods,
+there are a ton of helpful functions in Spark's built-in SQL functions module.
+
+In Scala, this is org.apache.spark.sql.functions, and
+pyspark.sql.functions in Python.
+Functions from this module must be imported into your code.
+
+
+3.1.Aggregate Functions
+Here are some of the built-in functions available for aggregation.
+
+Method	                               Description
+approx_count_distinct	Returns the approximate number of distinct items in a group
+avg	                    Returns the average of the values in a group
+collect_list	        Returns a list of objects with duplicates
+corr                	Returns the Pearson Correlation Coefficient for two columns
+max	                    Compute the max value for each numeric columns for each group
+mean	                Compute the average value for each numeric columns for each group
+stddev_samp         	Returns the sample standard deviation of the expression in a group
+sumDistinct         	Returns the sum of distinct values in the expression
+var_pop	                Returns the population variance of the values in a group
+
+Use the grouped data method agg to apply built-in aggregate functions
+
+This allows you to apply other transformations on the resulting columns, such as alias.
+
+=========================================================
+
+3.2. Other pyspark.sql.functions (inside select):
+
+- col  ( use for column expressions  ( inside dataframe methods) ).
 - monotonically_increasing_id
-- max
-- min
+
+===================================================
+
+3.3. Math Functions
+Here are some of the built-in functions for math operations.
+
+Method	               Description
+ceil	       Computes the ceiling of the given column.
+cos	           Computes the cosine of the given value.
+log	           Computes the natural logarithm of the given value.
+round	       Returns the value of the column e rounded to 0 decimal places with HALF_UP round mode.
+sqrt	       Computes the square root of the specified float value.
 
 """
-
 
 import time
 from pprint import pprint
@@ -62,7 +116,7 @@ spark = SparkSession.builder.master("local[*]").getOrCreate()
 # spark reader
 df = spark.read.format("json").load(f"{ROOT}/source_data/flight-data/json/")
 
-df.withColumnRenamed()
+# df.withColumnRenamed()
 
 
 df.show()
@@ -184,8 +238,6 @@ sort()
 Returns a new DataFrame sorted by the given columns or expressions.
 Alias: orderBy
 """
-
-
 (
     df.filter(
         (sf.col("DEST_COUNTRY_NAME") != "United States")
@@ -197,7 +249,11 @@ Alias: orderBy
     .show()
 )
 
-
+df.withColumn(
+    'sqrt_count', sf.sqrt('count')
+).withColumn(
+'sin_count', sf.sin(sf.col('count'))
+).show()
 
 # time.sleep(600)
 # spark.stop()
