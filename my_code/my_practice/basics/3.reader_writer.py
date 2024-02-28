@@ -242,3 +242,56 @@ It is known for its fast compression and decompression speeds,
 making it suitable for scenarios 
 where low-latency compression and decompression are essential.
 """
+
+output_dir = f"{ROOT}/my_code/my_practice/basics/write_output_dir/csv_df_to_parquet"
+
+csv_df_with_schema.printSchema()
+
+(
+    csv_df_with_schema
+    .write
+    .option("compression", "snappy")
+    .mode("overwrite")
+    .parquet(output_dir)
+)
+
+# alternative syntax:
+# (
+#     csv_df_with_schema
+#     .write
+#     .parquet(output_dir, compression="snappy", mode="overwrite")
+# )
+
+"""
+Write DataFrames to tables
+Write events_df to a table using the DataFrameWriter method saveAsTable
+Note This creates a GLOBAL TABLE, 
+unlike the local view created by the DataFrame method createOrReplaceTempView
+"""
+
+print(spark.catalog.listCatalogs())
+print(spark.catalog.listDatabases())
+print(spark.catalog.listTables())
+
+# (
+#     csv_df_with_schema
+#     .write
+#     .mode("overwrite")
+#     .saveAsTable("flights_from_csv")
+# )
+
+'''
+Write Results to a Delta Table
+Write events_df with the DataFrameWriter's save method 
+and the following configurations: Delta format & overwrite mode.
+
+events_output_path = DA.paths.working_dir + "/delta/events"
+
+(
+    events_df
+    .write
+    .format("delta")
+    .mode("overwrite")
+    .save(events_output_path)
+)
+'''
