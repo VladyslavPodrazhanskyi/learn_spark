@@ -280,6 +280,7 @@ print(spark.catalog.listTables())
 #     .saveAsTable("flights_from_csv")
 # )
 
+
 '''
 Write Results to a Delta Table
 Write events_df with the DataFrameWriter's save method 

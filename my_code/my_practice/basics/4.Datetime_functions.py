@@ -179,6 +179,9 @@ Convert to Date
 to_date
 Converts the column into DateType by casting rules to DateType.
 
+Manipulate Datetimes
+date_add
+Returns the date that is the given number of days after start
 """
 
 dt_attribute_df = df.select(
