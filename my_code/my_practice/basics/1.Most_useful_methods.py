@@ -255,6 +255,134 @@ df.withColumn(
 'sin_count', sf.sin(sf.col('count'))
 ).show()
 
+"""
+Non-aggregate and Miscellaneous Functions
+Here are a few additional non-aggregate and miscellaneous built-in functions.
+
+Method	                                Description
+col / column               	Returns a Column based on the given column name.
+lit	                           Creates a Column of literal value
+isnull                     	Return true if the column is null
+endswith
+rand                    	Generate a random column with independent 
+                           and identically distributed (i.i.d.) 
+                           samples uniformly distributed in [0.0, 1.0)
+
+"""
+
+"""
+DataFrameNaFunctions
+
+DataFrameNaFunctions is a DataFrame submodule with methods for handling null values. 
+Obtain an instance of DataFrameNaFunctions by accessing the na attribute of a DataFrame.
+https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameNaFunctions.html#pyspark.sql.DataFrameNaFunctions
+
+
+Method	                                 Description
+drop	     - Returns a new DataFrame omitting rows with any, all, or a specified number of null values, 
+                considering an optional subset of columns
+        
+fill	    - Replace null values with the specified value for an optional subset of columns
+replace	    - Returns a new DataFrame replacing a value with another value, considering an optional subset of columns
+"""
+
+
+sales_df = (
+    spark
+    .read
+    .parquet(f"{ROOT}/my_code/my_practice/basics/sales_data_source/")
+)
+
+print(sales_df.count())             # 58
+print(sales_df.na.drop().count())   # 58
+
+sales_df.printSchema()
+"""
+root
+ |-- order_id: long (nullable = true)
+ |-- email: string (nullable = true)
+ |-- transaction_timestamp: long (nullable = true)
+ |-- total_item_quantity: long (nullable = true)
+ |-- purchase_revenue_in_usd: double (nullable = true)
+ |-- unique_items: long (nullable = true)
+ |-- items: array (nullable = true)
+ |    |-- element: struct (containsNull = true)
+ |    |    |-- coupon: string (nullable = true)
+ |    |    |-- item_id: string (nullable = true)
+ |    |    |-- item_name: string (nullable = true)
+ |    |    |-- item_revenue_in_usd: double (nullable = true)
+ |    |    |-- price_in_usd: double (nullable = true)
+ |    |    |-- quantity: long (nullable = true)
+
+"""
+sales_exploded_df = (
+    sales_df
+    .withColumn("items", sf.explode(sf.col("items")))
+)
+
+sales_exploded_df.select("items.coupon").show()
+"""
++--------+
+|  coupon|
++--------+
+|NEWBED10|
+|NEWBED10|
+|NEWBED10|
+|    NULL|
+|    NULL|
+|    NULL|
+|    NULL|
+|    NULL|
+|    NULL|
+|    NULL|
+"""
+print(sales_exploded_df.select("items.coupon").count())            # 62
+print(sales_exploded_df.select("items.coupon").na.drop().count())  # 14
+
+sales_exploded_df.select("items.coupon").na.fill("NO COUPON").show()
+"""
++---------+
+|   coupon|
++---------+
+| NEWBED10|
+| NEWBED10|
+| NEWBED10|
+|NO COUPON|
+|NO COUPON|
+|NO COUPON|
+|NO COUPON|
+|NO COUPON|
+|NO COUPON|
+|NO COUPON|
+| NEWBED10|
+| NEWBED10|
+| NEWBED10|
+"""
+"""
+Joining DataFrames
+The DataFrame join method joins two DataFrames based on a given join expression.
+
+Several different types of joins are supported:
+
+Inner join based on equal values of a shared column called "name" (i.e., an equi join)
+df1.join(df2, "name")
+
+Inner join based on equal values of the shared columns called "name" and "age"
+df1.join(df2, ["name", "age"])
+
+Full outer join based on equal values of a shared column called "name"
+df1.join(df2, "name", "outer")
+
+Left outer join based on an explicit column expression
+df1.join(df2, df1["customer_name"] == df2["account_name"], "left_outer")
+
+
+joined_df = gmail_accounts.join(other=users_df, on='email', how = "inner")
+"""
+
+
+
+
 # time.sleep(600)
 # spark.stop()
 
