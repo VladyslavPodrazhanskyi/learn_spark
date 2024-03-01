@@ -14,6 +14,17 @@ DataFrame method: explain
 
 """
 
+"""
+Logical Optimization
+
+explain(..) prints the query plans, 
+optionally formatted by a given explain mode. 
+Compare the following logical plan & physical plan, 
+noting how Catalyst handled the multiple filter transformations.
+
+
+"""
+
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 import pyspark.sql.types as st
@@ -22,24 +33,28 @@ from my_code import ROOT
 
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
-sales_df = (
+events_df = (
     spark
     .read
-    .parquet(f"{ROOT}/my_code/my_practice/basics/sales_data_source/")
+    .parquet(f"{ROOT}/my_code/my_practice/basics/events_data_source/")
 )
 
+events_df.show()
 
-sales_df.show()
-
-sales_df.printSchema()
+events_df.printSchema()
 """
 root
- |-- order_id: long (nullable = true)
- |-- email: string (nullable = true)
- |-- transaction_timestamp: long (nullable = true)
- |-- total_item_quantity: long (nullable = true)
- |-- purchase_revenue_in_usd: double (nullable = true)
- |-- unique_items: long (nullable = true)
+ |-- device: string (nullable = true)
+ |-- ecommerce: struct (nullable = true)
+ |    |-- purchase_revenue_in_usd: double (nullable = true)
+ |    |-- total_item_quantity: long (nullable = true)
+ |    |-- unique_items: long (nullable = true)
+ |-- event_name: string (nullable = true)
+ |-- event_previous_timestamp: long (nullable = true)
+ |-- event_timestamp: long (nullable = true)
+ |-- geo: struct (nullable = true)
+ |    |-- city: string (nullable = true)
+ |    |-- state: string (nullable = true)
  |-- items: array (nullable = true)
  |    |-- element: struct (containsNull = true)
  |    |    |-- coupon: string (nullable = true)
@@ -48,180 +63,234 @@ root
  |    |    |-- item_revenue_in_usd: double (nullable = true)
  |    |    |-- price_in_usd: double (nullable = true)
  |    |    |-- quantity: long (nullable = true)
+ |-- traffic_source: string (nullable = true)
+ |-- user_first_touch_timestamp: long (nullable = true)
+ |-- user_id: string (nullable = true)
 
 """
-
-exploded_df = (
-    sales_df
-    .withColumn("exploded_items", sf.explode("items"))
-)
-
-exploded_df.select("items", "exploded_items").show(truncate=False)
-
-exploded_df.printSchema()
-
-
-
-# inside column "items" -  list of structs
-# each items - nested schemas of columns for separate item
-items = [
-    {"NEWBED10", "M_STAN_Q", "Standard Queen Mattress", 940.5, 1045.0, 1},
-    {"NEWBED10", "P_DOWN_S", "Standard Down Pillow", 107.10000000000001, 119.0, 1}
-]
-
-# inside column "exploded_items" -  struct -  nested schema of columns for separate item
-#         coupon,     item_id,           item_name, item_revenue_in_usd, price_in_usd, quantity
-item = {"NEWBED10", "M_STAN_Q", "Standard Queen Mattress", 940.5,            1045.0,      1}
-# access to column in nested schema through dot notation: "item.item_id"
-# after select it with dot notation, column have name after dot that is item_id
-
-
-
-print(sales_df.count())     # 58
-print(exploded_df.count())   # 62  number of rows increased after explode
-
-
-details_df = (
-    sales_df
-    .withColumn("items", sf.explode(sf.col("items")))
-    .select("email", "items.item_name")                        # access to column in nested schema through dot notation
-    .withColumn("details", sf.split("item_name", " "))
-)
-
-
-details_df.printSchema()
 """
-root
- |-- email: string (nullable = true)
- |-- item_name: string (nullable = true)
- |-- details: array (nullable = true)
- |    |-- element: string (containsNull = false)
-"""
-details_df.show(truncate=False)
-print(details_df.count())  # 62
-
-"""
-String Functions
-Here are some of the built-in functions available for manipulating strings.
-
-Method	Description
-translate	           Translate any character in the src by a character in replaceString
-regexp_replace         Replace all substrings of the specified string value that match regexp with rep
-regexp_extract         Extract a specific group matched by a Java regex, from the specified string column
-ltrim	               Removes the leading space characters from the specified string column
-lower	               Converts a string column to lowercase
-split	               Splits str around matches of the given pattern (converts string to list of strings)
-"""
-
-# For example: let's imagine that we need to parse our email column.
-# We're going to use the split function to split domain and handle.
-
-(
-    sales_df
-    .select("email")
-    .withColumn("email_handle", sf.split("email", "@", 0))
-    .show(truncate=False)
-)
-
-"""
-Collection Functions
-Here are some of the built-in functions available for working with arrays.
-
-Method	                                 Description
-array_contains	      Returns null if the array is null, true if the array contains value, and false otherwise.
-                      inside withColumn -  create boolean column
-                      inside filter - filter rows
-element_at	          Returns element of array at given index. Array elements are numbered starting with 1.
-explode	              Creates a new row for each element in the given array or map column.
-collect_set           Returns a set of objects with duplicate elements eliminated.
-
-"""
-
-mattress_df = (
-    details_df
-    .filter(sf.array_contains(sf.col('details'), "Mattress"))
-    .withColumn("size", sf.element_at(sf.col("details"), 2))
-)
-
-mattress_df.show(truncate=False)
-
-"""
-Aggregate Functions ( used inside agg after groupBy)
-Here are some of the built-in aggregate functions available for creating arrays, typically from GroupedData.
-
-Method	                          Description
-
-collect_list	          Returns an array consisting of all values within the group.
-collect_set	              Returns an array consisting of all unique values within the group.
-
-"""
-
-mattress_df.printSchema()
-"""
-root
- |-- email: string (nullable = true)
- |-- item_name: string (nullable = true)
- |-- details: array (nullable = true)
- |    |-- element: string (containsNull = false)
- |-- size: string (nullable = true)
-
-"""
-
-
-size_df = (
-    mattress_df
-    .groupBy("email")
-    .agg(sf.collect_set("size").alias("size_options"))
-    # .filter(sf.array_size(sf.col("size_options")) > 1)
-)
-
-size_df.show()
-size_df.printSchema()
-"""
-root
- |-- email: string (nullable = true)
- |-- collect_set(size): array (nullable = false)
- |    |-- element: string (containsNull = false)
+Logical Optimization
+explain(..) prints the query plans,
  
- AS in sql after groupBy 
- only groupBy columns 
- and agregations columns are left 
-"""
+optionally formatted by a given explain mode. 
 
-"""
-Union and unionByName
-
-Warning The DataFrame 
-union method 
-resolves columns by position, as in standard SQL. 
-You should use it only if the two DataFrames have exactly the same schema, 
-including the column order. 
-
-In contrast, the DataFrame 
-unionByName method 
-resolves columns by name. This is equivalent to UNION ALL in SQL.
- Neither one will remove duplicates!!!!
-
-Below is a check to see if the two dataframes have a matching schema where union would be appropriate
+Compare the following logical plan & physical plan, 
+noting how Catalyst handled the multiple filter transformations.
 
 """
 
-print(mattress_df.schema == size_df.schema)
-
-# to have 2 df with the same schema
-# we can select the same col with from 2 df:
-
-union_email = (
-    mattress_df
-    .select("email")
-    .union(size_df.select("email"))
+limit_events_df = (
+    events_df
+    .filter(sf.col("event_name") != "reviews")
+    .filter(sf.col("event_name") != "checkout")
+    .filter(sf.col("event_name") != "register")
+    .filter(sf.col("event_name") != "email_coupon")
+    .filter(sf.col("event_name") != "cc_info")
+    .filter(sf.col("event_name") != "delivery")
+    .filter(sf.col("event_name") != "shipping_info")
+    .filter(sf.col("event_name") != "press")
 )
 
-print(mattress_df.count())
-print(size_df.count())
-print(union_email.count())
+print(events_df.count())  # 1457472
+print(limit_events_df.count())  # 1156071
 
-assert mattress_df.count() + size_df.count() == union_email.count()
+limit_events_df.explain(extended=False)
+"""
+== Physical Plan ==
+*(1) Filter ((((((((isnotnull(event_name#2) AND NOT (event_name#2 = reviews)) AND NOT (event_name#2 = checkout)) AND NOT (event_name#2 = register)) AND NOT (event_name#2 = email_coupon)) AND NOT (event_name#2 = cc_info)) AND NOT (event_name#2 = delivery)) AND NOT (event_name#2 = shipping_info)) AND NOT (event_name#2 = press))
++- *(1) ColumnarToRow
+   +- FileScan parquet [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] Batched: true, DataFilters: [isnotnull(event_name#2), NOT (event_name#2 = reviews), NOT (event_name#2 = checkout), NOT (event..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[file:/home/vladyslav_podrazhanskyi/projects/PERSONAL/python/learn_spar..., PartitionFilters: [], PushedFilters: [IsNotNull(event_name), Not(EqualTo(event_name,reviews)), Not(EqualTo(event_name,checkout)), Not(..., ReadSchema: struct<device:string,ecommerce:struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,u...
+"""
+
+limit_events_df.explain(extended=True)
+
+"""
+== Physical Plan ==
+.....
+== Parsed Logical Plan ==
+.....
+== Analyzed Logical Plan ==
+.....
+== Optimized Logical Plan ==
+.....
+== Physical Plan ==
+.....
+
+== Physical Plan ==
+*(1) Filter ((((((((isnotnull(event_name#2) AND NOT (event_name#2 = reviews)) AND NOT (event_name#2 = checkout)) AND NOT (event_name#2 = register)) AND NOT (event_name#2 = email_coupon)) AND NOT (event_name#2 = cc_info)) AND NOT (event_name#2 = delivery)) AND NOT (event_name#2 = shipping_info)) AND NOT (event_name#2 = press))
++- *(1) ColumnarToRow
+   +- FileScan parquet [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] Batched: true, DataFilters: [isnotnull(event_name#2), NOT (event_name#2 = reviews), NOT (event_name#2 = checkout), NOT (event..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[file:/home/vladyslav_podrazhanskyi/projects/PERSONAL/python/learn_spar..., PartitionFilters: [], PushedFilters: [IsNotNull(event_name), Not(EqualTo(event_name,reviews)), Not(EqualTo(event_name,checkout)), Not(..., ReadSchema: struct<device:string,ecommerce:struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,u...
 
 
+== Parsed Logical Plan ==
+'Filter NOT ('event_name = press)
++- Filter NOT (event_name#2 = shipping_info)
+   +- Filter NOT (event_name#2 = delivery)
+      +- Filter NOT (event_name#2 = cc_info)
+         +- Filter NOT (event_name#2 = email_coupon)
+            +- Filter NOT (event_name#2 = register)
+               +- Filter NOT (event_name#2 = checkout)
+                  +- Filter NOT (event_name#2 = reviews)
+                     +- Relation [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] parquet
 
+== Analyzed Logical Plan ==
+device: string, ecommerce: struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,unique_items:bigint>, event_name: string, event_previous_timestamp: bigint, event_timestamp: bigint, geo: struct<city:string,state:string>, items: array<struct<coupon:string,item_id:string,item_name:string,item_revenue_in_usd:double,price_in_usd:double,quantity:bigint>>, traffic_source: string, user_first_touch_timestamp: bigint, user_id: string
+Filter NOT (event_name#2 = press)
++- Filter NOT (event_name#2 = shipping_info)
+   +- Filter NOT (event_name#2 = delivery)
+      +- Filter NOT (event_name#2 = cc_info)
+         +- Filter NOT (event_name#2 = email_coupon)
+            +- Filter NOT (event_name#2 = register)
+               +- Filter NOT (event_name#2 = checkout)
+                  +- Filter NOT (event_name#2 = reviews)
+                     +- Relation [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] parquet
+
+== Optimized Logical Plan ==
+Filter (isnotnull(event_name#2) AND (((NOT (event_name#2 = reviews) AND NOT (event_name#2 = checkout)) AND (NOT (event_name#2 = register) AND NOT (event_name#2 = email_coupon))) AND (((NOT (event_name#2 = cc_info) AND NOT (event_name#2 = delivery)) AND NOT (event_name#2 = shipping_info)) AND NOT (event_name#2 = press))))
++- Relation [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] parquet
+
+== Physical Plan ==
+*(1) Filter ((((((((isnotnull(event_name#2) AND NOT (event_name#2 = reviews)) AND NOT (event_name#2 = checkout)) AND NOT (event_name#2 = register)) AND NOT (event_name#2 = email_coupon)) AND NOT (event_name#2 = cc_info)) AND NOT (event_name#2 = delivery)) AND NOT (event_name#2 = shipping_info)) AND NOT (event_name#2 = press))
++- *(1) ColumnarToRow
+   +- FileScan parquet [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] Batched: true, DataFilters: [isnotnull(event_name#2), NOT (event_name#2 = reviews), NOT (event_name#2 = checkout), NOT (event..., Format: Parquet, Location: InMemoryFileIndex(1 paths)[file:/home/vladyslav_podrazhanskyi/projects/PERSONAL/python/learn_spar..., PartitionFilters: [], PushedFilters: [IsNotNull(event_name), Not(EqualTo(event_name,reviews)), Not(EqualTo(event_name,checkout)), Not(..., ReadSchema: struct<device:string,ecommerce:struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,u...
+
+"""
+
+# Create optimized_limit_events_df created according to the physical plan
+optimized_limit_events_df = events_df.filter(
+    (sf.col("event_name") != "reviews")
+    & (sf.col("event_name") != "checkout")
+    & (sf.col("event_name") != "register")
+    & (sf.col("event_name") != "email_coupon")
+    & (sf.col("event_name") != "cc_info")
+    & (sf.col("event_name") != "delivery")
+    & (sf.col("event_name") != "shipping_info")
+    & (sf.col("event_name") != "press")
+)
+
+print(optimized_limit_events_df.count())
+
+optimized_limit_events_df.explain(extended=True)
+
+"""
+Of course, we wouldn't write the following code intentionally, 
+but in a long, complex query you might not notice 
+the duplicate filter conditions. 
+Let's see what Catalyst does with this query.
+"""
+
+
+stupid_df = (
+    events_df
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+    .filter(sf.col("event_name") != "finalize")
+)
+
+print(stupid_df.count())
+stupid_df.explain(True)
+
+"""
+Caching
+By default the data of a DataFrame is present on a Spark cluster only while it is being processed during a query
+-- it is not automatically persisted on the cluster afterwards.
+ (Spark is a data processing engine, not a data storage system.) 
+ You can explicity request Spark to persist a DataFrame on the cluster by invoking its cache method.
+
+If you do cache a DataFrame, you should always explictly evict it from cache 
+by invoking unpersist when you no longer need it.
+
+cached_df.unpersist()
+
+Best Practice Caching a DataFrame can be appropriate 
+if you are certain 
+that you will use the same DataFrame multiple times, as in:
+
+- Exploratory data analysis
+- Machine learning model training
+
+!!! Warning Aside from those use cases, 
+you should NOT cache DataFrames 
+because it is likely that you'll degrade the performance of your application.
+
+Caching consumes cluster resources that could otherwise be used for task execution
+Caching can prevent Spark from performing query optimizations, as shown in the next example
+
+"""
+"""
+Predicate Pushdown
+Here is example reading from a JDBC source, where Catalyst determines that predicate pushdown can take place.
+
+%scala
+// Ensure that the driver class is loaded
+Class.forName("org.postgresql.Driver")
+
+from pyspark.sql.functions import col
+
+jdbc_url = "jdbc:postgresql://server1.training.databricks.com/training"
+
+# Username and Password w/read-only rights
+conn_properties = {
+    "user" : "training",
+    "password" : "training"
+}
+
+pp_df = (spark
+         .read
+         .jdbc(url=jdbc_url,                 # the JDBC URL
+               table="training.people_1m",   # the name of the table
+               column="id",                  # the name of a column of an integral type that will be used for partitioning
+               lowerBound=1,                 # the minimum value of columnName used to decide partition stride
+               upperBound=1000000,           # the maximum value of columnName used to decide partition stride
+               numPartitions=8,              # the number of partitions/connections
+               properties=conn_properties    # the connection properties
+              )
+         .filter(col("gender") == "M")   # Filter the data by gender
+        )
+
+pp_df.explain(True)
+
+
+Note the lack of a Filter and the presence of a PushedFilters in the Scan. 
+The filter operation is pushed to the database and only the matching records are sent to Spark. 
+This can greatly reduce the amount of data that Spark needs to ingest.
+
+No Predicate Pushdown
+In comparison, caching the data before filtering eliminates the possibility for the predicate push down.
+
+cached_df = (spark
+            .read
+            .jdbc(url=jdbc_url,
+                  table="training.people_1m",
+                  column="id",
+                  lowerBound=1,
+                  upperBound=1000000,
+                  numPartitions=8,
+                  properties=conn_properties
+                 )
+            )
+
+cached_df.cache()
+filtered_df = cached_df.filter(col("gender") == "M")
+
+filtered_df.explain(True)
+
+
+In addition to the Scan (the JDBC read) we saw in the previous example, 
+here we also see the InMemoryTableScan followed by a Filter in the explain plan.
+
+This means Spark had to read ALL the data from the database and cache it, 
+and then scan it in cache to find the records matching the filter condition.
+
+Remember to clean up after ourselves!
+
+cached_df.unpersist()
+
+"""

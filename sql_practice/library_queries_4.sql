@@ -651,6 +651,9 @@ from books
 	ON b_id = sb_book
 ORDER BY real_count DESC;
 
+SELECT * FROM books;
+
+
 
 
 

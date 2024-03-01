@@ -284,6 +284,23 @@ drop	     - Returns a new DataFrame omitting rows with any, all, or a specified 
         
 fill	    - Replace null values with the specified value for an optional subset of columns
 replace	    - Returns a new DataFrame replacing a value with another value, considering an optional subset of columns
+
+
+conversions_df = (
+    users_df
+    .join(
+        converted_users_df,
+        on="email",
+        how="outer"
+    )
+    .filter(col("email").isNotNull())
+    .fillna(False, subset="converted")  # .na.fill(False) 
+)
+display(conversions_df)
+
+
+
+
 """
 
 

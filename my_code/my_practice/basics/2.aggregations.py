@@ -58,6 +58,14 @@ sum	           Compute the sum for each numeric columns for each group
 df.groupby('DEST_COUNTRY_NAME').sum("count", "double").show()
 df.groupby('DEST_COUNTRY_NAME').avg("count", "double").show()
 
+# abandoned_items_df = (
+#   abandoned_carts_df
+#   .withColumn("items", explode(col("cart")))
+#   .groupBy("items").count().alias("count")  # count()
+#   # sort("items")
+# )
+
+
 ''' 
 Aggregate Functions
 Here are some of the built-in functions available for aggregation.

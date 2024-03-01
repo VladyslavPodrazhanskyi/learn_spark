@@ -157,6 +157,18 @@ Method	                          Description
 collect_list	          Returns an array consisting of all values within the group.
 collect_set	              Returns an array consisting of all unique values within the group.
 
+carts_df = (
+    events_df
+    .withColumn("items", explode(col("items")))
+    .groupBy("user_id")
+    .agg(collect_set("items.item_id").alias("cart"))
+)
+
+
+
+
+
+
 """
 
 mattress_df.printSchema()
