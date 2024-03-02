@@ -55,7 +55,7 @@ root
  |-- geo: struct (nullable = true)
  |    |-- city: string (nullable = true)
  |    |-- state: string (nullable = true)
- |-- items: array (nullable = true)
+ |-- items: array_practice (nullable = true)
  |    |-- element: struct (containsNull = true)
  |    |    |-- coupon: string (nullable = true)
  |    |    |-- item_id: string (nullable = true)
@@ -134,7 +134,7 @@ limit_events_df.explain(extended=True)
                      +- Relation [device#0,ecommerce#1,event_name#2,event_previous_timestamp#3L,event_timestamp#4L,geo#5,items#6,traffic_source#7,user_first_touch_timestamp#8L,user_id#9] parquet
 
 == Analyzed Logical Plan ==
-device: string, ecommerce: struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,unique_items:bigint>, event_name: string, event_previous_timestamp: bigint, event_timestamp: bigint, geo: struct<city:string,state:string>, items: array<struct<coupon:string,item_id:string,item_name:string,item_revenue_in_usd:double,price_in_usd:double,quantity:bigint>>, traffic_source: string, user_first_touch_timestamp: bigint, user_id: string
+device: string, ecommerce: struct<purchase_revenue_in_usd:double,total_item_quantity:bigint,unique_items:bigint>, event_name: string, event_previous_timestamp: bigint, event_timestamp: bigint, geo: struct<city:string,state:string>, items: array_practice<struct<coupon:string,item_id:string,item_name:string,item_revenue_in_usd:double,price_in_usd:double,quantity:bigint>>, traffic_source: string, user_first_touch_timestamp: bigint, user_id: string
 Filter NOT (event_name#2 = press)
 +- Filter NOT (event_name#2 = shipping_info)
    +- Filter NOT (event_name#2 = delivery)

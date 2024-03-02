@@ -43,7 +43,7 @@ root
  |-- total_item_quantity: long (nullable = true)
  |-- purchase_revenue_in_usd: double (nullable = true)
  |-- unique_items: long (nullable = true)
- |-- items: array (nullable = true)
+ |-- items: array_practice (nullable = true)
  |    |-- element: struct (containsNull = true)
  |    |    |-- coupon: string (nullable = true)
  |    |    |-- item_id: string (nullable = true)
@@ -97,7 +97,7 @@ details_df.printSchema()
 root
  |-- email: string (nullable = true)
  |-- item_name: string (nullable = true)
- |-- details: array (nullable = true)
+ |-- details: array_practice (nullable = true)
  |    |-- element: string (containsNull = false)
 """
 details_df.show(truncate=False)
@@ -131,11 +131,11 @@ Collection Functions
 Here are some of the built-in functions available for working with arrays.
 
 Method	                                 Description
-array_contains	      Returns null if the array is null, true if the array contains value, and false otherwise.
+array_contains	      Returns null if the array_practice is null, true if the array_practice contains value, and false otherwise.
                       inside withColumn -  create boolean column
                       inside filter - filter rows
-element_at	          Returns element of array at given index. Array elements are numbered starting with 1.
-explode	              Creates a new row for each element in the given array or map column.
+element_at	          Returns element of array_practice at given index. Array elements are numbered starting with 1.
+explode	              Creates a new row for each element in the given array_practice or map column.
 collect_set           Returns a set of objects with duplicate elements eliminated.
 
 """
@@ -154,8 +154,8 @@ Here are some of the built-in aggregate functions available for creating arrays,
 
 Method	                          Description
 
-collect_list	          Returns an array consisting of all values within the group.
-collect_set	              Returns an array consisting of all unique values within the group.
+collect_list	          Returns an array_practice consisting of all values within the group.
+collect_set	              Returns an array_practice consisting of all unique values within the group.
 
 carts_df = (
     events_df
@@ -176,7 +176,7 @@ mattress_df.printSchema()
 root
  |-- email: string (nullable = true)
  |-- item_name: string (nullable = true)
- |-- details: array (nullable = true)
+ |-- details: array_practice (nullable = true)
  |    |-- element: string (containsNull = false)
  |-- size: string (nullable = true)
 
@@ -195,7 +195,7 @@ size_df.printSchema()
 """
 root
  |-- email: string (nullable = true)
- |-- collect_set(size): array (nullable = false)
+ |-- collect_set(size): array_practice (nullable = false)
  |    |-- element: string (containsNull = false)
  
  AS in sql after groupBy 

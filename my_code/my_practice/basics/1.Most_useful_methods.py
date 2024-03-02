@@ -322,7 +322,7 @@ root
  |-- total_item_quantity: long (nullable = true)
  |-- purchase_revenue_in_usd: double (nullable = true)
  |-- unique_items: long (nullable = true)
- |-- items: array (nullable = true)
+ |-- items: array_practice (nullable = true)
  |    |-- element: struct (containsNull = true)
  |    |    |-- coupon: string (nullable = true)
  |    |    |-- item_id: string (nullable = true)
