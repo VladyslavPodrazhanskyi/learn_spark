@@ -264,17 +264,151 @@ id_events_hist_df = (
 
 id_events_hist_df.orderBy(sf.col("id")).show()
 
-#
-# exploded_df = (
-#     events_hist_df
-#     .withColumn("items", sf.col("items"))
-#     .withColumn("item", sf.explode("items"))  # # .where(sf.size("items") > 2)
-# )
-#
-# exploded_df.show()
-#
-# print("events_hist_df_count", events_hist_df.count())  # 485 696
-# print("exploded_count:", exploded_df.count())
+
+exploded_df = (
+    events_hist_df
+    .withColumn("item", sf.explode("items"))
+    .where(sf.size("items") > 2)
+)
+
+print("exploded")
+exploded_df.show(truncate=False)
+
+print("events_hist_df_count", events_hist_df.count())  # 485 696
+print("events_with_items_count", events_hist_df.where(sf.size("items") > 0).count())  # 121735
+#  all other rows are lost during explode ( where items is empty list of null)
+print("items_null_count", events_hist_df.where(sf.size("items").isNull()).count())    #   0
+print("items_empty_count", events_hist_df.where(sf.size("items") == 0).count())       #   363961 is lost in explode
+print("exploded_count:", exploded_df.count())
 # exploded_count:
 # without where 136 290
-# with where 2541
+# with where(sf.size("items") > 2)  =  2541
+
+# explode_outer
+# Returns a new row for each element in the given array or map.
+# Unlike explode, if the array/map is null or empty then null is produced.
+# Uses the default column name col for elements
+# in the array and key and value for elements in the map unless specified otherwise.
+
+exploded_outer_df = (
+    events_hist_df
+    .withColumn(
+        "exploded_outer_item",
+        sf.explode_outer("items")
+    )
+)
+
+exploded_outer_df.show()
+print(exploded_outer_df.count())  # 500251
+
+''' 
+The code below combines array transformations to create a table
+that shows the unique collection of actions and the items in a user's cart.
+
+collect_set() collects unique values for a field, including fields within arrays.
+flatten() combines multiple arrays into a single array.
+array_distinct() removes duplicate elements from an array.
+
+SELECT user_id,
+  collect_set(event_name) AS event_history,
+  array_distinct(flatten(collect_set(items.item_id))) AS cart_history
+FROM exploded_events
+GROUP BY user_id
+'''
+
+(
+    exploded_df
+    .groupBy("user_id")
+    .agg(
+        sf.array_distinct(sf.flatten(sf.collect_set("items.item_id"))).alias("cart_history"),
+        sf.collect_set(sf.col("event_name")).alias("event_history")
+    )
+    .show(truncate=False)
+)
+
+'''
+Combine and Reshape Data
+
+Join Tables
+Spark SQL supports standard JOIN operations (inner, outer, left, right, anti, cross, semi).
+Here we join the exploded events dataset with a lookup table to grab the standard printed item name.\
+
+============================================================
+%sql
+CREATE OR REPLACE TEMP VIEW item_purchases AS
+
+SELECT * 
+FROM (SELECT *, explode(items) AS item FROM sales) a
+INNER JOIN item_lookup b
+ON a.item.item_id = b.item_id;
+SELECT * FROM item_purchases
+===========================================================
+%python
+exploded_salesDF = (spark
+    .table("sales")
+    .withColumn("item", explode("items"))
+)
+
+itemsDF = spark.table("item_lookup")
+
+item_purchasesDF = (exploded_salesDF
+    .join(itemsDF, exploded_salesDF.item.item_id == itemsDF.item_id)
+)
+
+display(item_purchasesDF)
+=====================================================
+
+'''
+
+"""
+Pivot Tables
+We can use PIVOT to view data from different perspectives by rotating unique values 
+in a specified pivot column into multiple columns based on an aggregate function.
+
+The PIVOT clause follows the table name or subquery specified in a FROM clause, which is the input for the pivot table.
+Unique values in the pivot column are grouped and aggregated using the provided aggregate expression,
+ creating a separate column for each unique value in the resulting pivot table.
+The following code cell uses PIVOT to flatten out the item purchase information contained 
+in several fields derived from the sales dataset. This flattened data format can be useful for dashboarding, 
+but also useful for applying machine learning algorithms for inference or prediction.
+
+%sql
+SELECT *
+FROM item_purchases
+PIVOT (
+  sum(item.quantity) FOR item_id IN (
+    'P_FOAM_K',
+    'M_STAN_Q',
+    'P_FOAM_S',
+    'M_PREM_Q',
+    'M_STAN_F',
+    'M_STAN_T',
+    'M_PREM_K',
+    'M_PREM_F',
+    'M_STAN_K',
+    'M_PREM_T',
+    'P_DOWN_S',
+    'P_DOWN_K')
+)
+
+========================
+
+%python
+transactionsDF = (item_purchasesDF
+    .groupBy("order_id", 
+        "email",
+        "transaction_timestamp", 
+        "total_item_quantity", 
+        "purchase_revenue_in_usd", 
+        "unique_items",
+        "items",
+        "item",
+        "name",
+        "price")
+    .pivot("item_id")
+    .sum("item.quantity")
+)
+display(transactionsDF)
+
+
+"""
