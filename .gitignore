@@ -140,6 +140,8 @@ cython_debug/
 metastore_db
 derby.log
 
+# macOS system files
+.DS_Store
 
 result_data/
 checkpoints/
